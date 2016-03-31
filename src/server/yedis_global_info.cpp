@@ -1,0 +1,1 @@
+#include "../server/yedis_global_info.h"namespace yedis_server{  YedisDBInfo dbi;}

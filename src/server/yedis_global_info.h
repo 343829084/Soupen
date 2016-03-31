@@ -1,0 +1,1 @@
+#ifndef YEDIS_GLOBAL_INFO_H_#define YEDIS_GLOBAL_INFO_H_#include<stdint.h>namespace yedis_server{  struct YedisDBInfo  {    YedisDBInfo()    {      yedis_current_db_id = 0;      yedis_total_memory_used = 0;    }    int yedis_current_db_id;    int64_t yedis_total_memory_used;  };  extern YedisDBInfo dbi;}#endif /*YEDIS_GLOBAL_INFO_H_*/
