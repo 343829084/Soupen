@@ -18,7 +18,7 @@ Tcmalloc is highly recommended to improve the performance of yedis.
 
 python src/client/client.py
 
-## Commond Supported Right Now
+## Feature Supported Right Now
 
 ###BloomFilter
 
