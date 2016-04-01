@@ -21,9 +21,9 @@ python src/client/yedis_client.py
 
 ## Feature Supported Right Now
 
-### db operation
+### DB operation
 
-select 12 //ok . change db. select 12th db
+select 12 //ok.select 12th db
 
 ###BloomFilter
 
@@ -60,6 +60,8 @@ tcontains db yedis //true
 tcontains db redis //true
 
 tcontains db REDIS //true
+
+tdel db //ok. delete the trie db
 
 //Note that, the behaviour of following is undefined:
 
