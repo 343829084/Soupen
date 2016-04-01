@@ -12,11 +12,12 @@ cd src/server
 
 g++ -O2 yedis_global_info.cpp yedis_db.cpp ../ds/yedis_string.cpp ../ds/yedis_bloom_filter.cpp yedis_order.cpp yedis_epoll.cpp yedis_server.cpp -o yedis_server
 
-Tcmalloc is highly recommended to improve the performance of yedis.
+./yedis_server
+
 
 ## How to use
 
-python src/client/client.py
+python src/client/yedis_client.py
 
 ## Feature Supported Right Now
 
