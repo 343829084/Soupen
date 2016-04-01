@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #define nullptr 0
-#define YEDIS_INT32_MAX 200000000
+#define YEDIS_INT64_MAX 9223372036854775807LL
 //concurrency related items
 #define CAS(address,oldValue,newValue) __sync_bool_compare_and_swap(address,oldValue,newValue)
 #define ADD_AND_FETCH(address,offset) __sync_add_and_fetch(address,offset)
@@ -22,6 +22,11 @@
 #define YEDIS_INLINE inline
 #define YEDIS_MUST_INLINE inline __attribute__((always_inline))
 
+//others
+
+#define YEDIS_SUCCED (YEDIS_LIKELY(YEDIS_SUCCESS == ret))
+#define YEDIS_FAILED (YEDIS_UNLIKELY(YEDIS_SUCCESS != ret))
+
 //error codes
 static const int YEDIS_SUCCESS = 0;
 static const int YEDIS_ERROR_ENTRY_ALREADY_EXISTS = -1;
@@ -35,4 +40,5 @@ static const int YEDIS_ERROR_TABLE_FULL = -8;
 static const int YEDIS_ERROR_TABLE_NEED_RESIZE = -9;
 static const int YEDIS_ERROR_UNEXPECTED = -10;
 static const int YEDIS_ERROR_NOT_SUPPORT = -11;
+static const int YEDIS_ERROR_MEMORY_LIMITED = -12;
 #endif /* YEDIS_COMMON_H_ */

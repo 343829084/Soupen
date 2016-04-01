@@ -1,7 +1,5 @@
 #ifndef YEDIS_ORDER_H_
 #define YEDIS_ORDER_H_
-#include "../base/yedis_common.h"
-#include "../base/yedis_memory.h"
 #include "../server/yedis_db.h"
 #define LEFT_SPILT '('
 #define RIGHT_SPILT ')'
@@ -9,6 +7,7 @@
 namespace yedis_server
 {
 
+  //define YedisDataStructureNode
   typedef YedisDSTypeNode<YedisBloomFilter> YedisBloomFilterDSNode;
   typedef YedisDSTypeNode<YedisTrie<YedisTrieNode> > YedisTrieDSNode;
 
@@ -36,25 +35,35 @@ namespace yedis_server
     BFDEL = 9,//del bloom filter
     TSET = 10,//create a trie and set
     TCONTAINS = 11,//find a string in a trie
-    TDEL = 12,
-    MAX_TYPE = 13
+    TDEL = 12,//delete a trie
+    SELECT = 13,//select another db
+    FLUSHDB = 14,//flushdb db
+    MAX_TYPE = 15
   };
+
   typedef int (*YedisOrderRoutine)(char *out_buffer,
       char **params,
       int *param_lens,
       int param_nums);
+
   struct YedisOrderTrieNode
   {
-    YedisOrderTrieNode(bool is_case_sensitive)
+    int init(bool is_case_sensitive)
     {
+      int ret = YEDIS_SUCCESS;
       int64_t size = 10 + 26 + 1;
       next_ = (YedisOrderTrieNode **)yedis_malloc(sizeof(YedisOrderTrieNode*) * size);
-      for (int64_t i = 0; i < size; i++) {
-        next_[i] = nullptr;
+      if (YEDIS_UNLIKELY(nullptr == next_)) {
+        ret = YEDIS_ERROR_NO_MEMORY;
+      } else {
+        for (int64_t i = 0; i < size; i++) {
+          next_[i] = nullptr;
+        }
+        flag_ = false;
+        routine_func = nullptr;
+        order_type = MAX_TYPE;
       }
-      flag_ = false;
-      routine_func = nullptr;
-      order_type = MAX_TYPE;
+      return ret;
     }
     YedisOrderRoutine routine_func;
     YedisOrderType order_type;
@@ -62,8 +71,8 @@ namespace yedis_server
     YedisOrderTrieNode **next_;
   };
 
-  void set_order_routine();
-  void init_order_funcs();
+  int set_order_routine();
+  int init_order_funcs();
   int parser_text(char *text, char *out_buffer);
   YedisOrderRoutine get_order_routine(char *order_name_start, char *order_name_end);
 
@@ -71,8 +80,9 @@ namespace yedis_server
 
   ///////////////////////////////////////////////////////////////////////////////
   template<typename T>
-  void free_yedis_ds_type_node(YedisDSTypeNode<T> *p)
+  void reclaim_yedis_ds_type_node(YedisDSTypeNode<T> *p)
   {
+    p->~YedisDSTypeNode<T>();
     yedis_free(p->val, sizeof(T));
     yedis_free(p->key, sizeof(YedisNormalString));
     yedis_free(p, sizeof(YedisDSTypeNode<T>));
@@ -87,7 +97,7 @@ namespace yedis_server
     out = ydbe[dbi.yedis_current_db_id].member_field; \
     bool is_found = false; \
     while(nullptr != out) { \
-      if(out->key->compare(key, key_length) == 0) { \
+      if(out->key->is_equal(key, key_length)) { \
         is_found = true; \
         break; \
       } \
@@ -98,57 +108,57 @@ namespace yedis_server
 #define CREATE_BLOOM_FILTER_NODE(n , m) \
   YedisBloomFilterDSNode *bfnode = nullptr;\
   YedisBloomFilter *bf = nullptr;\
-  YedisBloomFilterDSNode *buffer_bfnode = nullptr;\
   YedisNormalString *string = nullptr;\
-  YedisBloomFilter *buffer_bf = nullptr;\
-  YedisNormalString *buffer_string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
-  if (YEDIS_UNLIKELY(nullptr == buffer_string)) {\
+  string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
+  if (YEDIS_UNLIKELY(nullptr == string)) {\
     ret = YEDIS_ERROR_NO_MEMORY;\
+  } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
   } else {\
-    string = new (buffer_string) YedisNormalString(params[0], param_lens[0]);\
-    buffer_bf = static_cast<YedisBloomFilter*>(yedis_malloc(sizeof(YedisBloomFilter)));\
-    if (YEDIS_UNLIKELY(nullptr == buffer_bf)) {\
+    bf = static_cast<YedisBloomFilter*>(yedis_malloc(sizeof(YedisBloomFilter)));\
+    if (YEDIS_UNLIKELY(nullptr == bf)) {\
       ret = YEDIS_ERROR_NO_MEMORY;\
-      yedis_free(buffer_string, sizeof(YedisNormalString));\
+    } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = bf->init(n, m)))) { \
     } else {\
-      bf = new (buffer_bf) YedisBloomFilter(n, m);\
-      buffer_bfnode = static_cast<YedisBloomFilterDSNode*>(yedis_malloc(sizeof(YedisBloomFilterDSNode)));\
-      if (YEDIS_UNLIKELY(nullptr == buffer_bfnode)) {\
+      bfnode = static_cast<YedisBloomFilterDSNode*>(yedis_malloc(sizeof(YedisBloomFilterDSNode)));\
+      if (YEDIS_UNLIKELY(nullptr == bfnode)) {\
         ret = YEDIS_ERROR_NO_MEMORY;\
-        yedis_free(buffer_string, sizeof(YedisNormalString));\
-        yedis_free(buffer_bf, sizeof(YedisBloomFilter));\
-      } else {\
-        bfnode = new (buffer_bfnode) YedisBloomFilterDSNode();\
+      } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = bfnode->init()))) { \
       }\
     }\
+  }\
+  if (YEDIS_FAILED) { \
+    yedis_reclaim(string);\
+    yedis_reclaim(bf);\
+    yedis_reclaim(bfnode);\
   }
+
 #define CREATE_YEDIS_TRIE_NODE(is_case_sensitive) \
   YedisTrieDSNode *trienode = nullptr;\
   YedisTrie<YedisTrieNode> *trie = nullptr;\
-  YedisTrieDSNode *buffer_trienode = nullptr;\
   YedisNormalString *string = nullptr;\
-  YedisTrie<YedisTrieNode> *buffer_trie = nullptr;\
-  YedisNormalString *buffer_string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
-  if (YEDIS_UNLIKELY(nullptr == buffer_string)) {\
+  string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
+  if (YEDIS_UNLIKELY(nullptr == string)) {\
     ret = YEDIS_ERROR_NO_MEMORY;\
+  } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
   } else {\
-    string = new (buffer_string) YedisNormalString(params[0], param_lens[0]);\
-    buffer_trie = static_cast<YedisTrie<YedisTrieNode>*>(yedis_malloc(sizeof(YedisTrie<YedisTrieNode>)));\
-    if (YEDIS_UNLIKELY(nullptr == buffer_trie)) {\
+    trie = static_cast<YedisTrie<YedisTrieNode>*>(yedis_malloc(sizeof(YedisTrie<YedisTrieNode>)));\
+    if (YEDIS_UNLIKELY(nullptr == trie)) {\
       ret = YEDIS_ERROR_NO_MEMORY;\
-      yedis_free(buffer_string, sizeof(YedisNormalString));\
+    } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = trie->init(is_case_sensitive)))) { \
     } else {\
-      trie = new (buffer_trie) YedisTrie<YedisTrieNode>(is_case_sensitive);\
-      buffer_trienode = static_cast<YedisTrieDSNode*>(yedis_malloc(sizeof(YedisTrieDSNode)));\
-      if (YEDIS_UNLIKELY(nullptr == buffer_trienode)) {\
+      trienode = static_cast<YedisTrieDSNode*>(yedis_malloc(sizeof(YedisTrieDSNode)));\
+      if (YEDIS_UNLIKELY(nullptr == trienode)) {\
         ret = YEDIS_ERROR_NO_MEMORY;\
-        yedis_free(buffer_string, sizeof(YedisNormalString));\
-        yedis_free(buffer_trienode, sizeof(YedisTrie<YedisTrieNode>));\
-      } else {\
-        trienode = new (buffer_trienode) YedisTrieDSNode();\
+      } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = trienode->init()))) { \
       }\
     }\
+  }\
+  if (YEDIS_FAILED) { \
+    yedis_reclaim(string);\
+    yedis_reclaim(trie);\
+    yedis_reclaim(trienode);\
   }
+
 #define DECLARE_YEDIS_DEL_DS_NODE(TYPE, member_field) \
   void yedis_ds_node_del(TYPE *curr);
 #define DEFINE_YEDIS_DEL_DS_NODE(TYPE, member_field) \
@@ -167,8 +177,7 @@ namespace yedis_server
     } else { \
       ydbe[dbi.yedis_current_db_id].member_field = curr->next; \
     } \
-    curr->~TYPE(); \
-    free_yedis_ds_type_node(curr); \
+    reclaim_yedis_ds_type_node(curr); \
   }
 
 #define DECLARE_YEDIS_INSERT_DS_NODE(TYPE, RAW_TYPE, member_field) \
@@ -183,7 +192,7 @@ namespace yedis_server
   }
 
 
-
+  //standard bloom filter routine
   int bfadd(char *out_buffer,
       char **params,
       int *param_lens,
@@ -201,6 +210,7 @@ namespace yedis_server
       int *param_lens,
       int param_nums);
 
+  //trie routine
   int tset(char *out_buffer,
       char **params,
       int *param_lens,
@@ -210,6 +220,15 @@ namespace yedis_server
       int *param_lens,
       int param_nums);
   int tdel(char *out_buffer,
+      char **params,
+      int *param_lens,
+      int param_nums);
+
+  int select(char *out_buffer,
+      char **params,
+      int *param_lens,
+      int param_nums);
+  int flushdb(char *out_buffer,
       char **params,
       int *param_lens,
       int param_nums);

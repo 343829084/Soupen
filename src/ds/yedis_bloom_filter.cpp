@@ -1,30 +1,26 @@
 #include "../ds/yedis_bloom_filter.h"
-#include "../server/yedis_global_info.h"
-#include<iostream>
-using namespace std;
+#include "../base/yedis_memory.h"
+#include "../base/yedis_hash.h"
+#include <cmath>
 namespace yedis_datastructures
 {
   using namespace yedis_server;
-  YedisBloomFilter::YedisBloomFilter(int n, int m)
-  {
-    data_ = nullptr;
-    k = 0;
-    size_in_byte_ = 0;
-    init(n, m);
-  }
   YedisBloomFilter::~YedisBloomFilter()
   {
     yedis_free(data_, size_in_byte_);
     data_ = nullptr;
     size_in_byte_ = 0;
   }
-  int YedisBloomFilter::init(int n, int m)
+  int YedisBloomFilter::init(int64_t n, int64_t m)
   {
     int ret = YEDIS_SUCCESS;
+    data_ = nullptr;
+    k = 0;
+    size_in_byte_ = 0;
     if (n <= 0 || m <= 0 || m > n) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      uint64_t size = n / 8 * 8 + 8;
+      int64_t size = n / 8 * 8 + 8;
       uint64_t *tmp = static_cast<uint64_t *>(yedis_malloc(size));
       if (YEDIS_UNLIKELY(nullptr == tmp)) {
         ret = YEDIS_ERROR_NO_MEMORY;
@@ -80,6 +76,11 @@ namespace yedis_datastructures
   void YedisBloomFilter::add(uint64_t hash1, uint64_t hash2)
   {
     for (int i = 0; i < k; ++i) {
+      //hash = hash1 + i * hash2 may be overflowed
+      //so
+      //(hash1 + i *hash2) % p = (hash1 % p + (i*hash2) % p ) % p
+      //i*hash2 % p = i % p * hash2 % p % p;
+      //uint64_t idx = hash1 & (size_in_byte_ * 8 - 1) + i & (size_in_byte_ * 8 - 1);
       uint64_t hash = hash1 + i * hash2;
       uint64_t idx = hash & (size_in_byte_ * 8 - 1);
       uint64_t value = data_[idx / 64];

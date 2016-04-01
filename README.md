@@ -10,7 +10,7 @@ Yedis means Yebangyu + redis. LOL.
 
 cd src/server
 
-g++ -ltcmalloc -O2 yedis_global_info.cpp yedis_db.cpp ../ds/yedis_string.cpp ../ds/yedis_bloom_filter.cpp yedis_order.cpp yedis_epoll.cpp yedis_server.cpp -o yedis_server
+g++ -O2 yedis_global_info.cpp yedis_db.cpp ../ds/yedis_string.cpp ../ds/yedis_bloom_filter.cpp yedis_order.cpp yedis_epoll.cpp yedis_server.cpp -o yedis_server
 
 Tcmalloc is highly recommended to improve the performance of yedis.
 
@@ -20,39 +20,9 @@ python src/client/client.py
 
 ## Feature Supported Right Now
 
-###BloomFilter
+### db operation
 
-bfcontains key value 
-
-//check value exists in bloom filter key or not
-
-bfadd key value 
-
-//add value to bloom filter key 
-
-bfcreate key n m
-
-//create a bloom filter named key with size n (BYTES)
-//m stands for the size of set
-
-bfdel key
-
-//del bloom filter key
-
-### Trie
-
-tset key value flag
-
-//create a trie named key and insert value to it. flag can be 0 or 1 and used to indicate case sensitive or not
-
-tcontains key value
-
-//check the trie named key contains value or not
-
-tdel key
-
-//del trie named key
-## samples
+select 12 //ok . change db. select 12th db
 
 ###BloomFilter
 
@@ -66,11 +36,11 @@ bfadd DB yedis //ok
 
 bfadd DB oracle //ok
 
-bfcontains DB yedis //exist
+bfcontains DB yedis //true
 
-bfcontains DB oracle //exist
+bfcontains DB oracle //true
 
-bfcontains DB c++ //not exist
+bfcontains DB c++ //false
 
 bfdel DB //ok
 
@@ -84,11 +54,11 @@ tset db yedis 1 //ok
 
 //1 means case sensitive, while 0 means not.
 
-tcontains db yedis //exist !
+tcontains db yedis //true
 
-tcontains db redis //exist !
+tcontains db redis //true
 
-tcontains db REDIS //not exist !
+tcontains db REDIS //true
 
 //Note that, the behaviour of following is undefined:
 
@@ -97,6 +67,18 @@ tset db mysql 1
 tset db redis 0 //must be "tset db redis 1" , NOT  "tset db redis 0" 
 
 that is to say, you should determine the flag before you want to create the trie and keep it consistent within a key.
+
+## Truth
+
+### server
+
+![server](http://7xnljs.com1.z0.glb.clouddn.com/server.png)
+
+### client
+
+![client](http://7xnljs.com1.z0.glb.clouddn.com/client.png)
+
+
 
 
 

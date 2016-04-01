@@ -1,20 +1,19 @@
-#include "../base/yedis_common.h"
+#include "../base/yedis_memory.h"
 #include "../server/yedis_order.h"
-#include "../server/yedis_global_info.h"
 #include "../ds/yedis_trie.h"
 #include "../ds/yedis_bloom_filter.h"
-#include<iostream>
+#include <iostream>
 using namespace std;
 using namespace yedis_datastructures;
 namespace yedis_server
 {
   YedisOrderRoutine order_funcs[MAX_TYPE] = {nullptr};
   YedisTrie<YedisOrderTrieNode> yt(false);
-  const char *order_name[MAX_TYPE] = {
+  const char *ORDER_NAME[MAX_TYPE] = {
       "hget",
       "hset",
-      "tset",
-      "tget",
+      "mset",
+      "mget",
       "get",
       "set",
       "bfadd",
@@ -23,34 +22,68 @@ namespace yedis_server
       "bfdel",
       "tset",
       "tcontains",
-      "tdel"
+      "tdel",
+      "select",
+      "flushdb"
   };
-  YEDIS_MUST_INLINE int char2int(char *start, char *end)
+  const int ORDER_PARAM_NUM[MAX_TYPE] = {
+      2, //"hget",
+      3,//"hset",
+      3,//"mset",
+      2,//"mget",
+      1,//"get",
+      2,//"set",
+      2,//"bfadd",
+      2,//"bfcontains",
+      3,//"bfcreate",
+      1,//"bfdel",
+      3,//"tset",
+      2,//"tcontains",
+      1,//"tdel"
+      1,//"select"
+      1//"flushdb"
+  };
+  YEDIS_MUST_INLINE int64_t char2int(char *start, char *end)
   {
-    int ret = 0;
+    int64_t ret = 0;
     char *tmp = start;
+    int sign = 1;
+    if (*start == '-') {
+      sign = -1;
+      ++tmp;
+    }
     while(tmp != end) {
       ret = ret * 10 + (*tmp - '0');
       ++tmp;
     }
-    return ret;
+    return ret * sign;
   }
-  void set_order_routine()
+  YEDIS_MUST_INLINE int64_t int2char(char *buffer, int64_t value)
   {
-    int ret = YEDIS_SUCCESS;
-    for (int i = 0; YEDIS_SUCCESS == ret && i < MAX_TYPE ; ++i) {
-      YedisOrderTrieNode *tn_buffer = (YedisOrderTrieNode*)yedis_malloc(sizeof(YedisOrderTrieNode));
-      if (YEDIS_UNLIKELY(nullptr == tn_buffer)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
-      } else {
-        YedisOrderTrieNode *tn = new(tn_buffer) YedisOrderTrieNode(false);
-        tn->order_type = static_cast<YedisOrderType>(i);
-        tn->routine_func = order_funcs[i];
-        ret = yt.add(order_name[i], tn);
-      }
+    char *tmp = buffer;
+    if (value < 0) {
+      value = -value;//did not take int64_min and int64_max into consideration
+      *tmp = '-';
+      ++tmp;
     }
+    char *start = tmp;
+    do {
+      *tmp = value % 10 + '0';
+      value /= 10;
+      ++tmp;
+    } while(value);
+    char *end = tmp - 1;
+    //reverse [start, end];
+    while(start < end) {
+      char c = *start;
+      *end = *start;
+      *start = c;
+      ++start;
+      --end;
+    }
+    return tmp - buffer;
   }
-  int get_length_of_order(char *&p)
+  YEDIS_MUST_INLINE int64_t get_int(char *&p)
   {
     char *tmp = p;
     while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
@@ -58,21 +91,21 @@ namespace yedis_server
     }
     return char2int(tmp, p);
   }
-  int get_param_nums(char *&p)
+  YEDIS_MUST_INLINE int get_length_of_order(char *&p)
   {
-    char *tmp = p;
-    while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
-      p++;
-    }
-    return char2int(tmp, p);
+    return static_cast<int>(get_int(p));
   }
-  void skip_split(char *&p)
+  YEDIS_MUST_INLINE int get_param_nums(char *&p)
   {
-    p+=2;
+    return static_cast<int>(get_int(p));
   }
-  void set_params(char *&p, char **params, int *param_lens, int param_num)
+  YEDIS_MUST_INLINE void skip_split(char *&p)
   {
-    for (int i = 0; i < param_num; i++) {
+    p += 2;
+  }
+  void set_params(char *&p, char **params, int *param_lens, int64_t param_num)
+  {
+    for (int64_t i = 0; i < param_num; i++) {
       char *tmp = p;
       while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
         p++;
@@ -80,7 +113,7 @@ namespace yedis_server
       param_lens[i] = char2int(tmp, p);
       skip_split(p);
       params[i] = p;
-      p+=param_lens[i];
+      p += param_lens[i];
       skip_split(p);
     }
   }
@@ -88,8 +121,11 @@ namespace yedis_server
   {
     int ret = YEDIS_SUCCESS;
     char *p = text;
-    char *params[MAX_PARAM_NUMS]={nullptr};
-    int param_lens[MAX_PARAM_NUMS]={0};
+    char *params[MAX_PARAM_NUMS] = {nullptr};
+    int param_lens[MAX_PARAM_NUMS] = {0};
+    if (YEDIS_UNLIKELY(dbi.yedis_total_memory_used >= max_memory_limit)) {
+      ret = YEDIS_ERROR_MEMORY_LIMITED;
+    }
     while(YEDIS_SUCCESS == ret && *p != 'Y' && *(p+1) != 'E' && *(p+2) != 'D' && *(p+3) != 'I') {
       if (*p == '*') {
         p++;//skip '*'
@@ -97,7 +133,7 @@ namespace yedis_server
         skip_split(p);
         YedisOrderRoutine routine = get_order_routine(p, p + length_of_order);
         if (routine == nullptr) {
-          strcpy(out_buffer, "op not supported!!!");
+          strcpy(out_buffer, "-Operation not supported");
           ret = YEDIS_ERROR_NOT_SUPPORT;
           break;
         }
@@ -121,20 +157,26 @@ namespace yedis_server
       int param_nums)
   {
     int ret = YEDIS_SUCCESS;
-    YedisBloomFilterDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
-    if (tmp != nullptr) {
-      tmp->val->add(params[1], param_lens[1]);
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[BFADD] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      CREATE_BLOOM_FILTER_NODE(YedisBloomFilter::DEFAULT_N, YedisBloomFilter::DEFAULT_M);
-      if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
-        yedis_ds_node_insert(bfnode, bf, string);
+      YedisBloomFilterDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        tmp->val->add(params[1], param_lens[1]);
+      } else {
+        CREATE_BLOOM_FILTER_NODE(YedisBloomFilter::DEFAULT_N, YedisBloomFilter::DEFAULT_M);
+        if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
+          yedis_ds_node_insert(bfnode, bf, string);
+          bf->add(params[1], param_lens[1]);
+        }
       }
     }
+
     if (YEDIS_SUCCESS == ret) {
-      strcpy(out_buffer, "ok");
+      strcpy(out_buffer, "+OK");
     } else {
-      strcpy(out_buffer, "op failed");
+      strcpy(out_buffer, "-Operation failed");
     }
     return ret;
   }
@@ -144,31 +186,36 @@ namespace yedis_server
       int param_nums)
   {
     int ret = YEDIS_SUCCESS;
-    int n = char2int(params[1], params[1] + param_lens[1]);
-    int m = char2int(params[2], params[2] + param_lens[2]);
-    YedisBloomFilterDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
-    if (tmp != nullptr) {
-      YedisBloomFilter *bf = tmp->val;
-      bf->~YedisBloomFilter();
-      yedis_free(bf, sizeof(YedisBloomFilter));
-      YedisBloomFilter *buffer_bf = static_cast<YedisBloomFilter*>(yedis_malloc(sizeof(YedisBloomFilter)));
-      if (YEDIS_UNLIKELY(nullptr == buffer_bf)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
-      } else {
-        YedisBloomFilter *bf = new (buffer_bf) YedisBloomFilter(n, m);
-        tmp->val = bf;
-      }
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[BFCREATE] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      CREATE_BLOOM_FILTER_NODE(n, m);
-      if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
-        yedis_ds_node_insert(bfnode, bf, string);
+      int64_t n = char2int(params[1], params[1] + param_lens[1]);
+      int64_t m = char2int(params[2], params[2] + param_lens[2]);
+      YedisBloomFilterDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        YedisBloomFilter *bf = tmp->val;
+        yedis_reclaim(bf);
+        bf = static_cast<YedisBloomFilter*>(yedis_malloc(sizeof(YedisBloomFilter)));
+        if (YEDIS_UNLIKELY(nullptr == bf)) {
+          ret = YEDIS_ERROR_NO_MEMORY;
+        } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = bf->init(n, m)))) {
+          yedis_free(bf, sizeof(YedisBloomFilter));
+        } else {
+          tmp->val = bf;
+        }
+      } else {
+        CREATE_BLOOM_FILTER_NODE(n, m);
+        if (YEDIS_SUCCED) {
+          yedis_ds_node_insert(bfnode, bf, string);
+        }
       }
     }
-    if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
-      strcpy(out_buffer, "ok");
+
+    if (YEDIS_SUCCED) {
+      strcpy(out_buffer, "+OK");
     } else {
-      strcpy(out_buffer, "op failed");
+      strcpy(out_buffer, "-Operation failed");
     }
     return ret;
   }
@@ -178,15 +225,20 @@ namespace yedis_server
       int param_nums)
   {
     int ret = YEDIS_SUCCESS;
-    YedisBloomFilterDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
-    if (tmp != nullptr) {
-      yedis_ds_node_del(tmp);
-    }
-    if (YEDIS_SUCCESS == ret) {
-      strcpy(out_buffer, "ok");
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[BFDEL] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      strcpy(out_buffer, "op failed");
+      YedisBloomFilterDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        yedis_ds_node_del(tmp);
+      }
+    }
+
+    if (YEDIS_SUCCED) {
+      strcpy(out_buffer, "+OK");
+    } else {
+      strcpy(out_buffer, "-Operation failed");
     }
     return ret;
   }
@@ -196,16 +248,23 @@ namespace yedis_server
       int param_nums)
   {
     int ret = YEDIS_SUCCESS;
-    YedisBloomFilterDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
     bool is_found = false;
-    if (tmp != nullptr) {
-      is_found  = tmp->val->contains(params[1], param_lens[1]);
-    }
-    if(is_found) {
-      strcpy(out_buffer, "exist");
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[BFCONTAINS] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      strcpy(out_buffer, "not exist");
+      YedisBloomFilterDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        is_found  = tmp->val->contains(params[1], param_lens[1]);
+      }
+    }
+
+    if (YEDIS_FAILED) {
+      strcpy(out_buffer, "-Operation failed");
+    } else if(is_found) {
+      strcpy(out_buffer, "+True");
+    } else {
+      strcpy(out_buffer, "+False");
     }
     return ret;
   }
@@ -217,22 +276,27 @@ namespace yedis_server
   {
     //tset db yedis 1
     int ret = YEDIS_SUCCESS;
-    YedisTrieDSNode *tmp = nullptr;
-    bool is_case_sensitive = static_cast<bool>(char2int(params[2], params[2] + param_lens[2]));
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
-    if (tmp != nullptr) {
-      tmp->val->add(params[1], params[1] + param_lens[1]);
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[TSET] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      CREATE_YEDIS_TRIE_NODE(is_case_sensitive);
-      if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
-        yedis_ds_node_insert(trienode, trie, string);
-        ret = trie->add(params[1], params[1] + param_lens[1]);
+      YedisTrieDSNode *tmp = nullptr;
+      bool is_case_sensitive = static_cast<bool>(char2int(params[2], params[2] + param_lens[2]));
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        tmp->val->add(params[1], params[1] + param_lens[1]);
+      } else {
+        CREATE_YEDIS_TRIE_NODE(is_case_sensitive);
+        if (YEDIS_SUCCED) {
+          yedis_ds_node_insert(trienode, trie, string);
+          ret = trie->add(params[1], params[1] + param_lens[1]);
+        }
       }
     }
-    if (YEDIS_SUCCESS == ret) {
-      strcpy(out_buffer, "ok");
+
+    if (YEDIS_SUCCED) {
+      strcpy(out_buffer, "+OK");
     } else {
-      strcpy(out_buffer, "op failed");
+      strcpy(out_buffer, "-Operation failed");
     }
     return ret;
   }
@@ -243,16 +307,23 @@ namespace yedis_server
   {
     //tcontains db yedis
     int ret = YEDIS_SUCCESS;
-    YedisTrieDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
     bool is_found = false;
-    if (tmp != nullptr) {
-      is_found  = tmp->val->contains(params[1], params[1] + param_lens[1]);
-    }
-    if(is_found) {
-      strcpy(out_buffer, "exist");
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[TCONTAINS] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
-      strcpy(out_buffer, "not exist");
+      YedisTrieDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        is_found  = tmp->val->contains(params[1], params[1] + param_lens[1]);
+      }
+    }
+
+    if (YEDIS_FAILED) {
+      strcpy(out_buffer, "-Operation failed");
+    } else if(is_found) {
+      strcpy(out_buffer, "+True");
+    } else {
+      strcpy(out_buffer, "+False");
     }
     return ret;
   }
@@ -263,19 +334,95 @@ namespace yedis_server
   {
     //tdel db
     int ret = YEDIS_SUCCESS;
-    YedisTrieDSNode *tmp = nullptr;
-    yedis_ds_node_find(params[0], param_lens[0], tmp);
-    if (tmp != nullptr) {
-      yedis_ds_node_del(tmp);
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[TDEL] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+    }  else {
+      YedisTrieDSNode *tmp = nullptr;
+      yedis_ds_node_find(params[0], param_lens[0], tmp);
+      if (tmp != nullptr) {
+        yedis_ds_node_del(tmp);
+      }
     }
-    if (YEDIS_SUCCESS == ret) {
-      strcpy(out_buffer, "ok");
+
+    if (YEDIS_SUCCED) {
+      strcpy(out_buffer, "+OK");
     } else {
-      strcpy(out_buffer, "op failed");
+      strcpy(out_buffer, "-Operation failed");
     }
     return ret;
   }
-  void init_order_funcs()
+
+  int select(char *out_buffer,
+      char **params,
+      int *param_lens,
+      int param_nums)
+  {
+    //change db
+    int ret = YEDIS_SUCCESS;
+    if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[SELECT] != param_nums)) {
+      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+    } else {
+      int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
+      if (db_id < 0 || db_id >= MAX_DB) {
+        ret = YEDIS_ERROR_INVALID_ARGUMENT;
+      } else {
+        dbi.yedis_current_db_id = db_id;
+      }
+    }
+
+    if (YEDIS_SUCCED) {
+      strcpy(out_buffer, "+OK");
+    } else {
+      strcpy(out_buffer, "-Operation failed");
+    }
+    return ret;
+  }
+  int flushdb(char *out_buffer,
+       char **params,
+       int *param_lens,
+       int param_nums)
+   {
+     //change db
+     int ret = YEDIS_SUCCESS;
+     if (YEDIS_UNLIKELY(ORDER_PARAM_NUM[FLUSHDB] != param_nums)) {
+       ret = YEDIS_ERROR_INVALID_ARGUMENT;
+     } else {
+       int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
+       if (YEDIS_UNLIKELY(db_id < -1 || db_id >= MAX_DB)) {
+         ret = YEDIS_ERROR_INVALID_ARGUMENT;
+       } else if (YEDIS_UNLIKELY(db_id == -1)) {
+         //flush all db
+       } else {
+         //flush db_id
+       }
+     }
+
+     if (YEDIS_SUCCED) {
+       strcpy(out_buffer, "+OK");
+     } else {
+       strcpy(out_buffer, "-Operation failed");
+     }
+     return ret;
+   }
+  ////////////////////////////////////////////////////////////////////////
+  int set_order_routine()
+  {
+    int ret = YEDIS_SUCCESS;
+    for (int i = 0; YEDIS_SUCCESS == ret && i < MAX_TYPE ; ++i) {
+      YedisOrderTrieNode *tn = (YedisOrderTrieNode*)yedis_malloc(sizeof(YedisOrderTrieNode));
+      if (YEDIS_UNLIKELY(nullptr == tn)) {
+        ret = YEDIS_ERROR_NO_MEMORY;
+      } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = tn->init(false)))) {
+        yedis_reclaim(tn);
+      } else {
+        tn->order_type = static_cast<YedisOrderType>(i);
+        tn->routine_func = order_funcs[i];
+        ret = yt.add(ORDER_NAME[i], tn);
+      }
+    }
+    return ret;
+  }
+  int init_order_funcs()
   {
     order_funcs[BFADD] = bfadd;
     order_funcs[BFCONTAINS] = bfcontains;
@@ -284,6 +431,9 @@ namespace yedis_server
     order_funcs[TSET] = tset;
     order_funcs[TCONTAINS] = tcontains;
     order_funcs[TDEL] = tdel;
+    order_funcs[SELECT] = select;
+    order_funcs[FLUSHDB] = flushdb;
+    return YEDIS_SUCCESS;
   }
   YedisOrderRoutine get_order_routine(char *order_name_start, char *order_name_end)
   {

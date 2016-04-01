@@ -1,10 +1,10 @@
 #ifndef YEDIS_MEMORY_H_
 #define YEDIS_MEMORY_H_
 #include <string.h>
-#include <stdint.h>
+#include "../base/yedis_common.h"
 #include "../server/yedis_global_info.h"
-using yedis_server::YedisDBInfo;
 //memory allocation
+using yedis_server::dbi;
 #define yedis_malloc(size) ({ \
   int64_t tmp = size;  \
   void *p = malloc(tmp); \
@@ -16,6 +16,16 @@ using yedis_server::YedisDBInfo;
   free(p); \
   __sync_fetch_and_add(&(dbi.yedis_total_memory_used), -tmp);\
   ;})
+
+template<typename T>
+void yedis_reclaim(T *&p)
+{
+  if (YEDIS_LIKELY(nullptr != p)) {
+    p->~T();
+    yedis_free(p, sizeof(T));
+    p = nullptr;
+  }
+}
 
 //memory op
 #define MEMSET(address, content, size) memset(address, content, size)

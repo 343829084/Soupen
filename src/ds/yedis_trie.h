@@ -1,49 +1,60 @@
 #ifndef YEDIS_TRIE_H_
 #define YEDIS_TRIE_H_
-#include "../base/yedis_common.h"
-#include "../server/yedis_global_info.h"
+#include "../base/yedis_memory.h"
 #include <ctype.h>
 using yedis_server::dbi;
 namespace yedis_datastructures
 {
   struct YedisTrieNode
   {
-    YedisTrieNode(bool is_case_sensitive)
+    int init(bool is_case_sensitive)
     {
+      int ret = YEDIS_SUCCESS;
+      is_inited_ = false;
       int64_t size = is_case_sensitive ? 10 + 26 + 26 + 1 : 10 + 26 + 1;
       next_ = (YedisTrieNode **)yedis_malloc(sizeof(YedisTrieNode*) * size);
-      for (int64_t i = 0; i < size; i++) {
-        next_[i] = nullptr;
+      if (YEDIS_UNLIKELY(nullptr == next_)) {
+        ret = YEDIS_ERROR_NO_MEMORY;
+      } else {
+        for (int64_t i = 0; i < size; i++) {
+          next_[i] = nullptr;
+        }
+        flag_ = false;
+        is_case_sensitive_ = is_case_sensitive;
+        is_inited_ = true;
       }
-      flag_ = false;
-      is_case_sensitive_ = is_case_sensitive;
+      return ret;
     }
     ~YedisTrieNode()
     {
       int64_t size = is_case_sensitive_ ? 10 + 26 + 26 + 1 : 10 + 26 + 1;
       yedis_free(next_, sizeof(YedisTrieNode*) * size);
+      is_inited_ = false;
     }
+    bool is_inited() {return is_inited_;}
     YedisTrieNode **next_;
     bool flag_;
     bool is_case_sensitive_;
+    bool is_inited_;
   };
   template<typename T>
   class YedisTrie
   {
   private:
   public:
-    YedisTrie(bool is_case_sensitive){root_ = nullptr; is_inited_ = false; is_case_sensitive_ = is_case_sensitive; init();}
+    YedisTrie(bool is_case_sensitive) { init(is_case_sensitive);}
     ~YedisTrie();
-    int add(const char *p);
-    int add(const char *p, const char *q);
-    int add(const char *p, const T *ele);
+    YEDIS_MUST_INLINE int add(const char *p);
+    YEDIS_MUST_INLINE int add(const char *p, const char *q);
+    YEDIS_MUST_INLINE int add(const char *p, const T *ele);
     int add(const char *p, const char *q, const T *ele);
-    bool contains(const char *p);
-    bool contains(const char *p, const char *q);
-    bool contains(const char *p, T* &ele);
+    YEDIS_MUST_INLINE bool contains(const char *p);
+    YEDIS_MUST_INLINE bool contains(const char *p, const char *q);
+    YEDIS_MUST_INLINE bool contains(const char *p, T* &ele);
     bool contains(const char *p, const char *q, T* &ele);
+    int init(bool is_case_sensitive);
+    bool is_inited() {return is_inited_;}
   private:
-    int init();
     bool is_valid_char(const char c, int &id);
     void gc_help(T *p, int64_t size);
   private:
@@ -59,6 +70,7 @@ namespace yedis_datastructures
   {
     int64_t size = is_case_sensitive_ ? 10 + 26 + 26 + 1 : 10 + 26 + 1;
     gc_help(root_, size);
+    is_inited_ = false;
   }
 
   template<typename T>
@@ -68,8 +80,7 @@ namespace yedis_datastructures
       for (int64_t i = 0; i < size; ++i) {
         gc_help(p->next_[i], size);
       }
-      p->~T();
-      yedis_free(p, sizeof(T));
+      yedis_reclaim(p);
     }
   }
 
@@ -77,7 +88,7 @@ namespace yedis_datastructures
   int YedisTrie<T>::add(const char *p)
   {
     int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
+    if (YEDIS_UNLIKELY(!is_inited())) {
       ret = YEDIS_ERROR_NOT_INITED;
     } else if (YEDIS_UNLIKELY(nullptr == p)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
@@ -91,9 +102,9 @@ namespace yedis_datastructures
   int YedisTrie<T>::add(const char *p, const char *q)
   {
     int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
+    if (YEDIS_UNLIKELY(!is_inited())) {
       ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(nullptr == p)) {
+    } else if (YEDIS_UNLIKELY(nullptr == p || nullptr == q)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
       ret = add(p, q, nullptr);
@@ -105,7 +116,7 @@ namespace yedis_datastructures
   int YedisTrie<T>::add(const char *p, const T *ele)
   {
     int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
+    if (YEDIS_UNLIKELY(!is_inited())) {
       ret = YEDIS_ERROR_NOT_INITED;
     } else if (YEDIS_UNLIKELY(nullptr == p)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
@@ -131,14 +142,16 @@ namespace yedis_datastructures
         if (YEDIS_UNLIKELY(nullptr == buffer)) {
           ret = YEDIS_ERROR_NO_MEMORY;
           break;
+        } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
+          yedis_reclaim(buffer);
         } else {
-          tmp->next_[id] = new (buffer)T(is_case_sensitive_);
+          tmp->next_[id] = buffer;
         }
       }
       tmp = tmp->next_[id];
       r++;
     } //end while
-    if (YEDIS_SUCCESS == ret && r >= q) {
+    if (YEDIS_SUCCED && r >= q) {
       if(ele != nullptr) {
         *tmp = *ele;
       }
@@ -148,14 +161,19 @@ namespace yedis_datastructures
   }
 
   template<typename T>
-  int YedisTrie<T>::init()
+  int YedisTrie<T>::init(bool is_case_sensitive)
   {
     int ret = YEDIS_SUCCESS;
+    root_ = nullptr;
+    is_inited_ = false;
+    is_case_sensitive_ = is_case_sensitive;
     T *buffer = static_cast<T*>(yedis_malloc(sizeof(T)));
     if (YEDIS_UNLIKELY(nullptr == buffer)) {
       ret = YEDIS_ERROR_NO_MEMORY;
+    } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
+      yedis_reclaim(buffer);
     } else {
-      root_ = new (buffer)T(is_case_sensitive_);
+      root_ = buffer;
       if (is_case_sensitive_) {
         id_offset_for_lower_case_ = 36;
         num_of_chars_ = 10+26+26+1;
@@ -187,78 +205,32 @@ namespace yedis_datastructures
   }
 
   template<typename T>
-  bool YedisTrie<T>::contains(const char *p)
+  YEDIS_MUST_INLINE bool YedisTrie<T>::contains(const char *p)
   {
-    const char *q = p;
-    bool ret = true;
-    T *tmp = root_;
-    int id = 0;
-    while(*q != '\0' && nullptr != tmp) {
-      if (YEDIS_UNLIKELY(!is_valid_char(*q, id))) {
-        ret = false;
-        break;
-      } else if (nullptr == tmp->next_[id]) {
-        ret = false;
-        break;
-      } else {
-        tmp = tmp->next_[id];
-      }
-      q++;
+    bool ret = false;
+    if (YEDIS_LIKELY(nullptr != p)) {
+      T *tmp = nullptr;
+      const char *q = p + strlen(p);
+      ret = contains(p, q, tmp);
     }
-    if (ret && tmp != nullptr) { //means that *q == '\0'
-      ret = tmp->flag_; //if we inserted "abcd" and looking for "abc"
-                        //tmp->flag_ will be false. so ret will be false,also.
+  }
+  template<typename T>
+  YEDIS_MUST_INLINE bool YedisTrie<T>::contains(const char *p, const char *q)
+  {
+    bool ret = false;
+    if (YEDIS_LIKELY(nullptr != p && nullptr != q)) {
+      T *tmp = nullptr;
+      ret = contains(p, q, tmp);
     }
     return ret;
   }
   template<typename T>
-  bool YedisTrie<T>::contains(const char *p, const char *q)
+  YEDIS_MUST_INLINE bool YedisTrie<T>::contains(const char *p, T* &ele)
   {
-    const char *curr = p;
-    bool ret = true;
-    T *tmp = root_;
-    int id = 0;
-    while(curr != q && nullptr != tmp) {
-      if (YEDIS_UNLIKELY(!is_valid_char(*curr, id))) {
-        ret = false;
-        break;
-      } else if (nullptr == tmp->next_[id]) {
-        ret = false;
-        break;
-      } else {
-        tmp = tmp->next_[id];
-      }
-      curr++;
-    }
-    if (ret && tmp != nullptr) {
-      ret = tmp->flag_; //if we inserted "abcd" and looking for "abc"
-                        //tmp->flag_ will be false. so ret will be false,also.
-    }
-    return ret;
-  }
-  template<typename T>
-  bool YedisTrie<T>::contains(const char *p, T* &ele)
-  {
-    const char *q = p;
-    bool ret = true;
-    T *tmp = root_;
-    int id = 0;
-    while(*q != '\0' && nullptr != tmp) {
-      if (YEDIS_UNLIKELY(!is_valid_char(*q, id))) {
-        ret = false;
-        break;
-      } else if (nullptr == tmp->next_[id]) {
-        ret = false;
-        break;
-      } else {
-        tmp = tmp->next_[id];
-      }
-      q++;
-    }
-    if (ret && tmp != nullptr) { //means that *q == '\0'
-      ret = tmp->flag_; //if we inserted "abcd" and looking for "abc"
-                        //tmp->flag_ will be false. so ret will be false,also.
-      ele = tmp;
+    bool ret = false;
+    if (YEDIS_LIKELY(nullptr != p)) {
+      const char *q = p + strlen(p);
+      ret = contains(p, q, ele);
     }
     return ret;
   }
@@ -281,7 +253,7 @@ namespace yedis_datastructures
       }
       r++;
     }
-    if (ret && tmp != nullptr) { //means that *q == '\0'
+    if (ret && tmp != nullptr) {
       ret = tmp->flag_; //if we inserted "abcd" and looking for "abc"
                         //tmp->flag_ will be false. so ret will be false,also.
       ele = tmp;
