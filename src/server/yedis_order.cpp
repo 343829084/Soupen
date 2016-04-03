@@ -3,6 +3,7 @@
 #include "../ds/yedis_trie.h"
 #include "../ds/yedis_bloom_filter.h"
 #include <iostream>
+#include <algorithm> //reverse
 using namespace std;
 using namespace yedis_datastructures;
 namespace yedis_server
@@ -60,28 +61,20 @@ namespace yedis_server
   }
   YEDIS_MUST_INLINE int64_t int2char(char *buffer, int64_t value)
   {
-    char *tmp = buffer;
-    if (value < 0) {
-      value = -value;//did not take int64_min and int64_max into consideration
-      *tmp = '-';
-      ++tmp;
-    }
-    char *start = tmp;
+  	static const char offset[19] = {'9','8','7','6','5','4','3','2','1','0','1','2','3','4','5','6','7','8','9'};
+  	static const char *zero = offset + 9;
+    char *p = buffer;
+    int64_t tmp = value;
     do {
-      *tmp = value % 10 + '0';
-      value /= 10;
-      ++tmp;
-    } while(value);
-    char *end = tmp - 1;
-    //reverse [start, end];
-    while(start < end) {
-      char c = *start;
-      *end = *start;
-      *start = c;
-      ++start;
-      --end;
+      *p = zero[tmp % 10];
+      tmp /= 10;
+      ++p;
+    } while(tmp);
+    if (value < 0) {
+      *p++ = '-';
     }
-    return tmp - buffer;
+    std::reverse(buffer, p);
+    return p - buffer;
   }
   YEDIS_MUST_INLINE int64_t get_int(char *&p)
   {
