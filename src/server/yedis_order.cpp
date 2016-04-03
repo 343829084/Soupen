@@ -61,12 +61,12 @@ namespace yedis_server
   }
   YEDIS_MUST_INLINE int64_t int2char(char *buffer, int64_t value)
   {
-  	static const char offset[19] = {'9','8','7','6','5','4','3','2','1','0','1','2','3','4','5','6','7','8','9'};
-  	static const char *zero = offset + 9;
+    static const char offset[19] = {'9','8','7','6','5','4','3','2','1','0','1','2','3','4','5','6','7','8','9'};
+    static const char *digit = offset + 9;
     char *p = buffer;
     int64_t tmp = value;
     do {
-      *p = zero[tmp % 10];
+      *p = digit[tmp % 10];
       tmp /= 10;
       ++p;
     } while(tmp);
