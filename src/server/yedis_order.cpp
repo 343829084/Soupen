@@ -66,7 +66,7 @@ namespace yedis_server
     char *p = buffer;
     int64_t tmp = value;
     do {
-      *p = digit[tmp % 10];
+      *p = *(digit + tmp % 10);
       tmp /= 10;
       ++p;
     } while(tmp);
