@@ -79,7 +79,7 @@ namespace yedis_server
       tmp = tmp / 10 + offset[remainder];
       ++p;
     } while (tmp);
-    if (value < 0) {
+    if(flag) {
       *p++ = '-';
     }
     std::reverse(buffer, p);
