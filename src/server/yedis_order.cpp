@@ -61,15 +61,24 @@ namespace yedis_server
   }
   YEDIS_MUST_INLINE int64_t int2char(char *buffer, int64_t value)
   {
-    static const char offset[19] = {'9','8','7','6','5','4','3','2','1','0','1','2','3','4','5','6','7','8','9'};
-    static const char *digit = offset + 9;
+    static const char remainder_offset[2][19] = { { '9', '8', '7', '6', '5', '4', '3', '2', '1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' },//正数
+
+                                                { '9', '8', '7', '6', '5', '4', '3', '2', '1', '0', '9', '8', '7', '6', '5', '4', '3', '2', '1' } };//负数
+
+    static const bool quotient_offset[2][19] = { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },//正数
+
+                                               { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };//负数								  
     char *p = buffer;
     int64_t tmp = value;
+    int flag = value < 0;
+    const char *digit = remainder_offset[flag] + 9;
+    const bool *offset = quotient_offset[flag] + 9;
     do {
-      *p = *(digit + tmp % 10);
-      tmp /= 10;
+      int remainder = tmp % 10;
+      *p = digit[remainder];
+      tmp = tmp / 10 + offset[remainder];
       ++p;
-    } while(tmp);
+    } while (tmp);
     if (value < 0) {
       *p++ = '-';
     }
