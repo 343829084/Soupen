@@ -5,6 +5,7 @@
 #include "../server/yedis_global_info.h"
 //memory allocation
 using yedis_server::dbi;
+/*
 #define yedis_malloc(size) ({ \
   int64_t tmp = size;  \
   void *p = malloc(tmp); \
@@ -16,7 +17,16 @@ using yedis_server::dbi;
   free(p); \
   __sync_fetch_and_add(&(dbi.yedis_total_memory_used), -tmp);\
   ;})
+*/
+#define yedis_malloc(size) ({ \
+  int64_t tmp = size;  \
+  void *p = malloc(tmp); \
+  p;})
 
+#define yedis_free(p, size) ({ \
+  int64_t tmp = size; \
+  free(p); \
+  ;})
 template<typename T>
 void yedis_reclaim(T *&p)
 {
