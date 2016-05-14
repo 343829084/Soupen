@@ -8,11 +8,9 @@ Yedis means Yebangyu + redis. LOL.
 
 ## How to build
 
-cd src/server
+g++ -O2 src/server/yedis_global_info.cpp src/server/yedis_db.cpp src/ds/yedis_string.cpp src/ds/yedis_treap.cpp src/ds/yedis_bloom_filter.cpp src/server/yedis_order.cpp src/server/yedis_epoll.cpp src/server/yedis_server.cpp -o yedis_server
 
-g++ -O2 yedis_global_info.cpp yedis_db.cpp ../ds/yedis_string.cpp ../ds/yedis_bloom_filter.cpp yedis_order.cpp yedis_epoll.cpp yedis_server.cpp -o yedis_server
-
-./yedis_server
+src/server/yedis_server
 
 
 ## How to use

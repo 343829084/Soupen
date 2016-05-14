@@ -1,7 +1,4 @@
 #include "../ds/yedis_treap.h"
-#include <iostream>
-using namespace std;
-
 namespace yedis_datastructures
 {
   using namespace yedis_server;
@@ -174,41 +171,6 @@ namespace yedis_datastructures
       }
     }
     return 0;
-  }
-
-  void YedisTreap::remove(const char *str, const double score)
-  {
-    remove(str, score, root_);
-  }
-
-  void YedisTreap::remove(const YedisNormalString *ele, const double score)
-  {
-    remove(ele->get_ptr(), score);
-  }
-
-  void YedisTreap::remove(const char *str, const double score, YedisTreapNode *&treap)
-  {
-    int cmp = 0;
-    if (treap != sentinel_) {
-      if (treap->score > score) {
-        remove(str, score, treap->left);
-      } else if (treap->score < score) {
-        remove(str, score, treap->right);
-      } else if (/*same score and cmp = 0*/(cmp = treap->ele->cmp(str)) > 0) { //found
-        remove(str, score, treap->left);
-      } else if (/*same score and cmp > 0*/cmp < 0) {
-        remove(str, score, treap->right);
-      } else {
-        //find...
-      }
-    }
-  }
-
-  void YedisTreap::help_remove(YedisTreapNode *&p)
-  {
-    p->~YedisTreapNode();
-    yedis_free(p, sizeof(YedisTreapNode));
-    p = sentinel_;
   }
 
   YedisTreapNode *YedisTreap::find_min()

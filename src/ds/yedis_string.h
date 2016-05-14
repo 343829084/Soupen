@@ -40,6 +40,10 @@ namespace yedis_datastructures
     {
       return !strcasecmp(p, data_);
     }
+    YEDIS_MUST_INLINE const bool is_equal(const char *p, int64_t len) const
+    {
+      return !strncasecmp(p, data_, len < len_ ? len : len_);
+    }
     YEDIS_MUST_INLINE const bool is_equal(const YedisNormalString *other) const
     {
       return 0 == MEMCMP((void *)other->data_, (void *)data_, this->length());
