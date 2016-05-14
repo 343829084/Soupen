@@ -5,6 +5,12 @@
 #include <stdlib.h>
 #define nullptr 0
 #define YEDIS_INT64_MAX 9223372036854775807LL
+#define YEDIS_UINT64_MIN 0ULL
+#define YEDIS_ASSERT(condition) \
+  if (!(condition)) { \
+    exit(0);\
+  }
+
 //concurrency related items
 #define CAS(address,oldValue,newValue) __sync_bool_compare_and_swap(address,oldValue,newValue)
 #define ADD_AND_FETCH(address,offset) __sync_add_and_fetch(address,offset)
