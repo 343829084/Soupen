@@ -13,7 +13,7 @@ void ticket_spin_lock_f()
     ++c;
   }
 }
-int ticket_spin_lock_main()
+int main()
 {
   while(true) {
     c = 0;

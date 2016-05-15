@@ -45,7 +45,7 @@ void test_kdtree()
 
   tree.query_range(lower, upper);
 }
-int test_kd_tree_main()
+int main()
 {
   test_kdtree();
   return 0;

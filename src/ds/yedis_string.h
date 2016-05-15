@@ -64,10 +64,6 @@ namespace yedis_datastructures
     {
       return len_;
     }
-    YEDIS_MUST_INLINE const bool is_inited() const
-    {
-      return len_ > 0;
-    }
     static int factory(const char *p, YedisNormalString* &yn_str);
   private:
     static const int64_t CHAR_LEN_THRESHOLD = 40;

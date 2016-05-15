@@ -15,13 +15,6 @@ namespace yedis_datastructures
         ele = nullptr;
       }
     }
-    void reset()
-    {
-      ele = nullptr;
-      left = right = nullptr;
-      score = size = -1;
-      priority = 0;
-    }
   public:
     YedisNormalString *ele;
     double score;

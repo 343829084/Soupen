@@ -62,7 +62,7 @@ void test(uint32_t num, double found_percent)
   test_cuckoo(num, found_percent);
   test_std(num, found_percent);
 }
-int test_yedis_cuckoo_hashmap_main()
+int main()
 {
   //test(3900000, 0.1);
   //test(3900000, 0.8);

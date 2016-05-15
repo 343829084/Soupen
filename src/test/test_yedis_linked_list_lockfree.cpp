@@ -18,7 +18,7 @@ void ins1()
     p->insert(ln);
   }
 }
-int u()
+int main()
 {
   thread t1(ins0);
   thread t2(ins1);

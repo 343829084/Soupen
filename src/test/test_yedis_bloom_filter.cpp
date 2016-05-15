@@ -13,7 +13,7 @@ void bf_string_test()
   YedisBloomFilter bf(1000,10);
   bf.add("helloworld");
 }
-int bf_string_test_main()
+int main()
 {
   bf_string_test();
   //cout<<dbi.yedis_total_memory_used<<endl;

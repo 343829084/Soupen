@@ -50,7 +50,7 @@ void yedis_array_test2()
   ya.push_back(s);
   ya.push_back(s);
 }
-int test_yedis_array_main()
+int main()
 {
   yedis_array_test2();
   return 0;

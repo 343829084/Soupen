@@ -1,9 +1,8 @@
-/*
 #include<iostream>
 #include<algorithm>
 #include<vector>
 #include<time.h>
-#include"YedisSort.h"
+#include"../algorithms/yedis_quick_sort.h"
 using namespace std;
 typedef MyCompareOperator<int> CO; //用于YedisSort
 int cmp ( const void *a , const void *b ) { return *(int *)a - *(int *)b; }//用于qsort
@@ -80,8 +79,6 @@ int test2()
   delete []b;
   delete []c;
 }
-
-
 int main()
 {
   test1();
@@ -89,6 +86,3 @@ int main()
   return 0;
 }
 
-//Use g++ -lrt test.cpp to compile & link me, please !
-
-*/

@@ -18,7 +18,7 @@ void g()
     YedisWriterLockGuard wl(rw_lock);
   }
 }
-int maintt()
+int main()
 {
   thread reader1(f);
   thread reader2(f);

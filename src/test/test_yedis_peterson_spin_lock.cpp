@@ -21,7 +21,7 @@ void peterson_spin_lock_g()
     ++cccc;
   }
 }
-int peterson_spin_lockmain()
+int main()
 {
   for (int i = 0 ; i <= 1000; ++i) {
     cccc = 0;
