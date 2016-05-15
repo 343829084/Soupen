@@ -21,7 +21,7 @@ namespace yedis_datastructures
     YedisTreapNode *left;
     YedisTreapNode *right;
     uint64_t priority;
-    int64_t size;//the count of its children
+    int64_t size;//the node count. including itself.
   };
   //score====>binary search tree
   //priority====>max heap
