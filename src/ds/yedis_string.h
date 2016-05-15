@@ -46,7 +46,7 @@ namespace yedis_datastructures
     }
     YEDIS_MUST_INLINE const bool is_equal(const YedisNormalString *other) const
     {
-      return 0 == MEMCMP((void *)other->data_, (void *)data_, this->length());
+      return !strncasecmp(other->data_, data_, this->length() < other->length() ? this->length() : other->length());
     }
     YEDIS_MUST_INLINE const int cmp(const char *p) const
     {
@@ -66,7 +66,7 @@ namespace yedis_datastructures
     }
     static int factory(const char *p, YedisNormalString* &yn_str);
   private:
-    static const int64_t CHAR_LEN_THRESHOLD = 40;
+    static const int64_t CHAR_LEN_THRESHOLD = 48;
     int64_t len_;
     char *data_;
     char buffer_data_[0];
