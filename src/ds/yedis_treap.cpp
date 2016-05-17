@@ -257,19 +257,4 @@ namespace yedis_datastructures
     }
     return tmp;
   }
-
-  void YedisTreap::swap(YedisTreapNode *p, YedisTreapNode *q)
-  {
-    YedisNormalString *ele = p->ele;
-    double score = p->score;
-    uint64_t priority = p->priority;
-
-    p->ele = q->ele;
-    p->score = q->score;
-    p->priority = q->priority;
-
-    q->ele = ele;
-    q->score = score;
-    q->priority = priority;
-  }
 }
