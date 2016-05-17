@@ -152,13 +152,66 @@ void test_treap_correct2()
   yedis_free(p, sizeof(YedisTreap));
 }
 
-//treap = substree2##_rotation(treap, treap->subtree1);
+void test_treap_correct3(int ele_to_delete)
+{
+  const int N = 10;
+  int i;
+  int key[N]= {6,5,10,8,1,9,2,3,4,7};
+  int rank[N] = {0};
+  char c[20];
+  YedisNormalString *str[N] = {nullptr};
+  YedisTreap *p = (YedisTreap *)yedis_malloc(sizeof(YedisTreap));
+  p->init();
+  //insert
+  for (i = 0; i < N; i++) {
+    sprintf(c, "%d", i);
+    int ret = YedisNormalString::factory(c, str[i]);
+    YEDIS_ASSERT(ret == 0);
+    ret = str[i]->init(c);
+    YEDIS_ASSERT(ret == 0);
+    ret = p->insert(str[i], key[i]);
+    YEDIS_ASSERT(ret == 0);
+  }
+  for (i = 0; i < N; i++) {
+    rank[i] = p->get_rank(str[i], key[i]);
+  }
+  //find
+  for (i = 0; i < N; i++) {
+    if (key[i] == ele_to_delete) {
+      break;
+    }
+  }
+  //del
+  int ret = p->remove(str[i], key[i]);
+  YEDIS_ASSERT(ret == 0);
+  for (int j = 0; j < N; ++j) {
+    if (j != i) {
+      YEDIS_ASSERT(p->find(str[j], key[j]) != nullptr);
+    }
+  }
+  YedisTreapNode *res = p->find(str[i], key[i]);
+  YEDIS_ASSERT(res == nullptr);
+  for (int j = 0; j < N; ++j) {
+    if (key[j] < ele_to_delete) {
+      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == rank[j]);
+    } else if (key[j] == ele_to_delete) {
+      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == 0);
+    } else {
+      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == rank[j] - 1);
+    }
+  }
+  p->~YedisTreap();
+  yedis_free(p, sizeof(YedisTreap));
+}
 
 int main()
 {
   test_treap_correct2();
   for (int i = 0; i < 10; i++) {
       test_treap_perf(false);
+  }
+  for (int i = 1; i <= 10; i++) {
+    test_treap_correct3(i);
   }
   cout<<"ordered : yedis rank cost"<<yedis_rank_cost<<endl;
   cout<<"ordered : yedis insert cost"<<yedis_insert_cost<<endl;

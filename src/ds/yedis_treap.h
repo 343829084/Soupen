@@ -34,8 +34,8 @@ namespace yedis_datastructures
     YEDIS_MUST_INLINE YedisTreapNode *find(const YedisNormalString *ele, const double score) {return find(ele->get_ptr(), score);}
     int insert(const char *str, const double score);
     int insert(YedisNormalString *ele, const double score);
-    void remove(const char *str, const double score);
-    void remove(const YedisNormalString *ele, const double score);
+    int remove(const char *str, const double score);
+    int remove(const YedisNormalString *ele, const double score);
     int get_rank(const char *str, const double score);
     YEDIS_MUST_INLINE int get_rank(const YedisNormalString *ele, const double score) {return get_rank(ele->get_ptr(), score);}
     YEDIS_MUST_INLINE int size() {return size_;}
@@ -44,7 +44,7 @@ namespace yedis_datastructures
   private:
     void gc_help(YedisTreapNode *p);
     void help_remove(YedisTreapNode *&p);
-    void remove(const char *str, const double score, YedisTreapNode *&treap);
+    int remove(const char *str, const double score, YedisTreapNode *&treap);
     void swap(YedisTreapNode *p, YedisTreapNode *q);
     int insert(YedisNormalString *ele, const double score, YedisTreapNode *&treap);
     YedisTreapNode *left_rotation(YedisTreapNode *k1, YedisTreapNode *k2);

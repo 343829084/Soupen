@@ -147,7 +147,7 @@ namespace yedis_datastructures
         tmp = tmp->left;
       }
     }
-    return tmp;
+    return tmp != sentinel_ ? tmp : nullptr;
   }
 
   int YedisTreap::get_rank(const char *str, const double score)
@@ -173,11 +173,64 @@ namespace yedis_datastructures
     return 0;
   }
 
+
+  int YedisTreap::remove(const char *str, const double score)
+  {
+    return remove(str, score, root_);
+  }
+
+  int YedisTreap::remove(const YedisNormalString *ele, const double score)
+  {
+    return remove(ele->get_ptr(), score);
+  }
+
+  int YedisTreap::remove(const char *str, const double score, YedisTreapNode *&treap)
+  {
+    int cmp = 0;
+    int ret = YEDIS_ERROR_ENTRY_NOT_EXIST;
+    if (treap != sentinel_) {
+      if (treap->score > score) {
+        ret = remove(str, score, treap->left);
+        treap->size -= (YEDIS_SUCCESS == ret);
+      } else if (treap->score < score) {
+        ret = remove(str, score, treap->right);
+        treap->size -= (YEDIS_SUCCESS == ret);
+      } else if (/*same score and cmp = 0*/(cmp = treap->ele->cmp(str)) > 0) { //found
+        ret = remove(str, score, treap->left);
+        treap->size -= (YEDIS_SUCCESS == ret);
+      } else if (/*same score and cmp > 0*/cmp < 0) {
+        ret = remove(str, score, treap->right);
+        treap->size -= (YEDIS_SUCCESS == ret);
+      } else /*if (cmp == 0)*/ {
+        ret = YEDIS_SUCCESS;
+        if (treap->left == sentinel_ && treap->right == sentinel_) {
+          help_remove(treap);
+        } else if (treap->left->priority > treap->right->priority) {
+          treap = right_rotation(treap, treap->left);
+          ret = remove(str, score, treap->right);
+          treap->size -= (YEDIS_SUCCESS == ret);
+        } else {
+          treap = left_rotation(treap, treap->right);
+          ret = remove(str, score, treap->left);
+          treap->size -= (YEDIS_SUCCESS == ret);
+        }
+      }
+    }
+    size_ -= (YEDIS_SUCCESS == ret);
+    return ret;
+  }
+
+  void YedisTreap::help_remove(YedisTreapNode *&p)
+  {
+    p->~YedisTreapNode();
+    yedis_free(p, sizeof(YedisTreapNode));
+    p = sentinel_;
+  }
   YedisTreapNode *YedisTreap::find_min()
   {
     YedisTreapNode *tmp = root_;
     if (YEDIS_UNLIKELY(sentinel_ == tmp)) {
-      return tmp;
+      return nullptr;
     }
     while(true) {
       if (tmp->left != sentinel_) {
@@ -193,7 +246,7 @@ namespace yedis_datastructures
   {
     YedisTreapNode *tmp = root_;
     if (YEDIS_UNLIKELY(sentinel_ == tmp)) {
-      return tmp;
+      return nullptr;
     }
     while(true) {
       if (tmp->right != sentinel_) {
