@@ -48,7 +48,7 @@ namespace yedis_datastructures
     int insert(YedisNormalString *ele, const double score, YedisTreapNode *&treap);
     YedisTreapNode *left_rotation(YedisTreapNode *k1, YedisTreapNode *k2);
     YedisTreapNode *right_rotation(YedisTreapNode *k1, YedisTreapNode *k2);
-    YEDIS_MUST_INLINE static int size(YedisTreapNode *p) {return nullptr == p ? 0 : p->size;}
+    YEDIS_MUST_INLINE static int size(YedisTreapNode *p) {return p->size;}
   private:
     YedisTreapNode *root_;
     YedisTreapNode *sentinel_;
