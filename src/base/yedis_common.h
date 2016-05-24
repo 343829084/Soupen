@@ -1,8 +1,12 @@
 #ifndef YEDIS_COMMON_H_
 #define YEDIS_COMMON_H_
-//standard items
+
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+
+//standard items
+
 #define nullptr 0
 #define YEDIS_INT64_MAX 9223372036854775807LL
 #define YEDIS_UINT64_MIN 0ULL
@@ -34,17 +38,19 @@
 #define YEDIS_FAILED (YEDIS_UNLIKELY(YEDIS_SUCCESS != ret))
 
 //error codes
-static const int YEDIS_SUCCESS = 0;
-static const int YEDIS_ERROR_ENTRY_ALREADY_EXISTS = -1;
-static const int YEDIS_ERROR_NOT_INITED = -2;
-static const int YEDIS_ERROR_NO_MEMORY = -3;
-static const int YEDIS_ERROR_EMPTY = -4;
-static const int YEDIS_ERROR_INDEX_OUT_OF_RANGE = -5;
-static const int YEDIS_ERROR_INVALID_ARGUMENT = -6;
-static const int YEDIS_ERROR_ENTRY_NOT_EXIST = -7;
-static const int YEDIS_ERROR_TABLE_FULL = -8;
-static const int YEDIS_ERROR_TABLE_NEED_RESIZE = -9;
-static const int YEDIS_ERROR_UNEXPECTED = -10;
-static const int YEDIS_ERROR_NOT_SUPPORT = -11;
-static const int YEDIS_ERROR_MEMORY_LIMITED = -12;
+
+#define YEDIS_SUCCESS  0
+#define YEDIS_ERROR_ENTRY_ALREADY_EXISTS  -1
+#define YEDIS_ERROR_NOT_INITED  -2
+#define YEDIS_ERROR_NO_MEMORY  -3
+#define YEDIS_ERROR_EMPTY  -4
+#define YEDIS_ERROR_INDEX_OUT_OF_RANGE  -5
+#define YEDIS_ERROR_INVALID_ARGUMENT  -6
+#define YEDIS_ERROR_ENTRY_NOT_EXIST  -7
+#define YEDIS_ERROR_TABLE_FULL  -8
+#define YEDIS_ERROR_TABLE_NEED_RESIZE  -9
+#define YEDIS_ERROR_UNEXPECTED  -10
+#define YEDIS_ERROR_NOT_SUPPORT  -11
+#define YEDIS_ERROR_MEMORY_LIMITED  -12
+
 #endif /* YEDIS_COMMON_H_ */

@@ -1,6 +1,5 @@
 #ifndef YEDIS_MEMORY_H_
 #define YEDIS_MEMORY_H_
-#include <string.h>
 #include "../base/yedis_common.h"
 #include "../server/yedis_global_info.h"
 //memory allocation

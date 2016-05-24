@@ -1,7 +1,6 @@
 #ifndef YEDIS_STRING_H_
 #define YEDIS_STRING_H_
 #include "../base/yedis_memory.h"
-#include <string.h>
 namespace yedis_datastructures
 {
   class YedisString

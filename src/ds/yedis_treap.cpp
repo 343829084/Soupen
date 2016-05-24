@@ -85,6 +85,7 @@ namespace yedis_datastructures
     if (treap == sentinel_) {
       if (YEDIS_UNLIKELY(nullptr == (treap = static_cast<YedisTreapNode*>(yedis_malloc(sizeof(YedisTreapNode)))))) {
         ret = YEDIS_ERROR_NO_MEMORY;
+        LOG_WARN("no memory. allocate failed in redis");
       } else {
         treap->ele = ele;
         treap->size = 1;
@@ -204,7 +205,7 @@ namespace yedis_datastructures
       } else /*if (cmp == 0)*/ {
         ret = YEDIS_SUCCESS;
         if (treap->left == sentinel_ && treap->right == sentinel_) {
-          help_remove(treap);
+          yedis_reclaim(treap);
         } else if (treap->left->priority > treap->right->priority) {
           treap = right_rotation(treap, treap->left);
           ret = remove(str, score, treap->right);
@@ -220,12 +221,7 @@ namespace yedis_datastructures
     return ret;
   }
 
-  void YedisTreap::help_remove(YedisTreapNode *&p)
-  {
-    p->~YedisTreapNode();
-    yedis_free(p, sizeof(YedisTreapNode));
-    p = sentinel_;
-  }
+
   YedisTreapNode *YedisTreap::find_min()
   {
     YedisTreapNode *tmp = root_;

@@ -43,7 +43,6 @@ namespace yedis_datastructures
     YedisTreapNode *find_min();
   private:
     void gc_help(YedisTreapNode *p);
-    void help_remove(YedisTreapNode *&p);
     int remove(const char *str, const double score, YedisTreapNode *&treap);
     int insert(YedisNormalString *ele, const double score, YedisTreapNode *&treap);
     YedisTreapNode *left_rotation(YedisTreapNode *k1, YedisTreapNode *k2);
