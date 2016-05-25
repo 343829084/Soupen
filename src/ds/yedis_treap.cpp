@@ -1,7 +1,6 @@
 #include "../ds/yedis_treap.h"
 namespace yedis_datastructures
 {
-  using namespace yedis_server;
   #define INSERT(subtree1, substree2) \
    insert(ele, score, treap->subtree1); \
    if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) { \
@@ -57,8 +56,8 @@ namespace yedis_datastructures
   int YedisTreap::insert(const char *str, const double score)
   {
     int ret = YEDIS_SUCCESS;
-    YedisNormalString *ele = nullptr;
-    if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = YedisNormalString::factory(str, ele)))) {
+    YedisString *ele = nullptr;
+    if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = YedisString::factory(str, ele)))) {
       //do nothing
     } else {
       ret = insert(ele, score);
@@ -66,7 +65,7 @@ namespace yedis_datastructures
     return ret;
   }
 
-  int YedisTreap::insert(YedisNormalString *ele, const double score)
+  int YedisTreap::insert(YedisString *ele, const double score)
   {
     int ret = YEDIS_SUCCESS;
     if (YEDIS_UNLIKELY(nullptr == sentinel_)) {
@@ -78,7 +77,7 @@ namespace yedis_datastructures
     return ret;
   }
 
-  int YedisTreap::insert(YedisNormalString *ele, const double score, YedisTreapNode *&treap)
+  int YedisTreap::insert(YedisString *ele, const double score, YedisTreapNode *&treap)
   {
     int ret = YEDIS_SUCCESS;
     int cmp = 0;
@@ -180,7 +179,7 @@ namespace yedis_datastructures
     return remove(str, score, root_);
   }
 
-  int YedisTreap::remove(const YedisNormalString *ele, const double score)
+  int YedisTreap::remove(const YedisString *ele, const double score)
   {
     return remove(ele->get_ptr(), score);
   }

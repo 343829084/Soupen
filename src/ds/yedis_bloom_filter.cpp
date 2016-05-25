@@ -1,10 +1,8 @@
 #include "../ds/yedis_bloom_filter.h"
-#include "../base/yedis_memory.h"
 #include "../base/yedis_hash.h"
 #include <cmath>
 namespace yedis_datastructures
 {
-  using namespace yedis_server;
   YedisBloomFilter::~YedisBloomFilter()
   {
     yedis_free(data_, size_in_byte_);
@@ -28,7 +26,7 @@ namespace yedis_datastructures
         MEMSET(tmp, 0, size);
         data_ = tmp;
         size_in_byte_ = size;
-        k = log(2.0) * (size_in_byte_ * 8  / m);
+        k = 0.69 * (size_in_byte_ * 8  / m);
         if (k <= 0) {
           k = 2;
         }
@@ -62,25 +60,20 @@ namespace yedis_datastructures
   }
   void YedisBloomFilter::add(const YedisString &key)
   {
-    uint64_t hash1 = MurmurHash64B(key.ptr(), key.length(), SEED1);
-    uint64_t hash2 = MurmurHash64B(key.ptr(), key.length(), SEED2);
+    uint64_t hash1 = MurmurHash64B(key.get_ptr(), key.length(), SEED1);
+    uint64_t hash2 = MurmurHash64B(key.get_ptr(), key.length(), SEED2);
     add(hash1, hash2);
   }
   bool YedisBloomFilter::contains(const YedisString &key) const
   {
-    uint64_t hash1 = MurmurHash64B(key.ptr(), key.length(), SEED1);
-    uint64_t hash2 = MurmurHash64B(key.ptr(), key.length(), SEED2);
+    uint64_t hash1 = MurmurHash64B(key.get_ptr(), key.length(), SEED1);
+    uint64_t hash2 = MurmurHash64B(key.get_ptr(), key.length(), SEED2);
     return contains(hash1, hash2);
   }
   //private functions
   void YedisBloomFilter::add(uint64_t hash1, uint64_t hash2)
   {
     for (int i = 0; i < k; ++i) {
-      //hash = hash1 + i * hash2 may be overflowed
-      //so
-      //(hash1 + i *hash2) % p = (hash1 % p + (i*hash2) % p ) % p
-      //i*hash2 % p = i % p * hash2 % p % p;
-      //uint64_t idx = hash1 & (size_in_byte_ * 8 - 1) + i & (size_in_byte_ * 8 - 1);
       uint64_t hash = hash1 + i * hash2;
       uint64_t idx = hash & (size_in_byte_ * 8 - 1);
       uint64_t value = data_[idx / 64];

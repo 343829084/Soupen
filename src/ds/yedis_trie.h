@@ -2,7 +2,6 @@
 #define YEDIS_TRIE_H_
 #include "../base/yedis_memory.h"
 #include <ctype.h>
-using yedis_server::dbi;
 namespace yedis_datastructures
 {
   struct YedisTrieNode

@@ -1,8 +1,8 @@
 #include "../base/yedis_memory.h"
 #include "../server/yedis_order.h"
+#include "../server/yedis_info_manager.h"
 #include "../ds/yedis_trie.h"
 #include "../ds/yedis_bloom_filter.h"
-#include <iostream>
 #include <algorithm> //reverse
 using namespace std;
 using namespace yedis_datastructures;
@@ -67,7 +67,7 @@ namespace yedis_server
 
     static const bool quotient_offset[2][19] = { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },//正数
 
-                                               { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };//负数								  
+                                               { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };//负数
     char *p = buffer;
     int64_t tmp = value;
     int flag = value < 0;
@@ -125,7 +125,7 @@ namespace yedis_server
     char *p = text;
     char *params[MAX_PARAM_NUMS] = {nullptr};
     int param_lens[MAX_PARAM_NUMS] = {0};
-    if (YEDIS_UNLIKELY(dbi.yedis_total_memory_used >= max_memory_limit)) {
+    if (YEDIS_UNLIKELY(YedisServerInfoManager::is_no_more_memory())) {
       ret = YEDIS_ERROR_MEMORY_LIMITED;
     }
     while(YEDIS_SUCCESS == ret && *p != 'Y' && *(p+1) != 'E' && *(p+2) != 'D' && *(p+3) != 'I') {
@@ -365,11 +365,7 @@ namespace yedis_server
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else {
       int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
-      if (db_id < 0 || db_id >= MAX_DB) {
-        ret = YEDIS_ERROR_INVALID_ARGUMENT;
-      } else {
-        dbi.yedis_current_db_id = db_id;
-      }
+      ret = YedisServerInfoManager::set_current_db_id(db_id);
     }
 
     if (YEDIS_SUCCED) {
@@ -390,7 +386,7 @@ namespace yedis_server
        ret = YEDIS_ERROR_INVALID_ARGUMENT;
      } else {
        int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
-       if (YEDIS_UNLIKELY(db_id < -1 || db_id >= MAX_DB)) {
+       if (YEDIS_UNLIKELY(db_id < -1 || db_id >= MAX_DB_NUM)) {
          ret = YEDIS_ERROR_INVALID_ARGUMENT;
        } else if (YEDIS_UNLIKELY(db_id == -1)) {
          //flush all db

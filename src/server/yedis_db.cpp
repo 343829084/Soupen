@@ -2,5 +2,5 @@
 using namespace std;
 namespace yedis_server
 {
-  YedisDBElement ydbe[MAX_DB];
+  YedisDBElement ydbe[MAX_DB_NUM];
 }

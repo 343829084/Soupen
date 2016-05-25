@@ -10,13 +10,13 @@ namespace yedis_datastructures
     {
       if (nullptr != ele) {
         int64_t size_to_free = ele->get_object_size();
-        ele->~YedisNormalString();
+        ele->~YedisString();
         yedis_free(ele, size_to_free);
         ele = nullptr;
       }
     }
   public:
-    YedisNormalString *ele;
+    YedisString *ele;
     double score;
     YedisTreapNode *left;
     YedisTreapNode *right;
@@ -31,20 +31,20 @@ namespace yedis_datastructures
     int init();
     ~YedisTreap();
     YedisTreapNode *find(const char *str, const double score);
-    YEDIS_MUST_INLINE YedisTreapNode *find(const YedisNormalString *ele, const double score) {return find(ele->get_ptr(), score);}
+    YEDIS_MUST_INLINE YedisTreapNode *find(const YedisString *ele, const double score) {return find(ele->get_ptr(), score);}
     int insert(const char *str, const double score);
-    int insert(YedisNormalString *ele, const double score);
+    int insert(YedisString *ele, const double score);
     int remove(const char *str, const double score);
-    int remove(const YedisNormalString *ele, const double score);
+    int remove(const YedisString *ele, const double score);
     int get_rank(const char *str, const double score);
-    YEDIS_MUST_INLINE int get_rank(const YedisNormalString *ele, const double score) {return get_rank(ele->get_ptr(), score);}
+    YEDIS_MUST_INLINE int get_rank(const YedisString *ele, const double score) {return get_rank(ele->get_ptr(), score);}
     YEDIS_MUST_INLINE int size() {return size_;}
     YedisTreapNode *find_max();
     YedisTreapNode *find_min();
   private:
     void gc_help(YedisTreapNode *p);
     int remove(const char *str, const double score, YedisTreapNode *&treap);
-    int insert(YedisNormalString *ele, const double score, YedisTreapNode *&treap);
+    int insert(YedisString *ele, const double score, YedisTreapNode *&treap);
     YedisTreapNode *left_rotation(YedisTreapNode *k1, YedisTreapNode *k2);
     YedisTreapNode *right_rotation(YedisTreapNode *k1, YedisTreapNode *k2);
     YEDIS_MUST_INLINE static int size(YedisTreapNode *p) {return p->size;}

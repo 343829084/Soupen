@@ -17,7 +17,7 @@ void test_treap_perf(bool is_random)
   int *key = (int*) malloc(N * sizeof(int));
   vector<int> tmp;
   char c[20];
-  YedisNormalString **str = (YedisNormalString**) malloc(N * sizeof(YedisNormalString*));
+  YedisString **str = (YedisString**) malloc(N * sizeof(YedisString*));
   for (i = 0; i < N; i++) {
     tmp.push_back(i + 1);
   }
@@ -34,7 +34,7 @@ void test_treap_perf(bool is_random)
   clock_gettime(CLOCK_MONOTONIC, &t1);
   for (i = 0; i < N; i++) {
     sprintf(c, "%d", key[i]);
-    YedisNormalString::factory(c, str[i]);
+    YedisString::factory(c, str[i]);
     str[i]->init(c);
     p->insert(str[i], key[i]);
   }
@@ -59,7 +59,7 @@ void test_treap_correct()
   int *key = (int*) malloc(N * sizeof(int));
   vector<int> tmp;
   char c[20];
-  YedisNormalString **str = (YedisNormalString**) malloc(N * sizeof(YedisNormalString*));
+  YedisString **str = (YedisString**) malloc(N * sizeof(YedisString*));
   for (i = 0; i < N; i++) {
     tmp.push_back(i + 1);
   }
@@ -73,7 +73,7 @@ void test_treap_correct()
   //insert
   for (i = 0; i < N; i++) {
     sprintf(c, "%d", key[i]);
-    int ret = YedisNormalString::factory(c, str[i]);
+    int ret = YedisString::factory(c, str[i]);
     YEDIS_ASSERT(ret == 0);
     ret = str[i]->init(c);
     YEDIS_ASSERT(ret == 0);
@@ -117,13 +117,13 @@ void test_treap_correct2()
   int i;
   int key[N]= {6,5,10,8,1,9,2,3,4,7};
   char c[20];
-  YedisNormalString *str[3 * N + 5] = {nullptr};
+  YedisString *str[3 * N + 5] = {nullptr};
   YedisTreap *p = (YedisTreap *)yedis_malloc(sizeof(YedisTreap));
   p->init();
   //insert
   for (i = 0; i < 3 * N + 5; i++) {
     sprintf(c, "%d", i);
-    int ret = YedisNormalString::factory(c, str[i]);
+    int ret = YedisString::factory(c, str[i]);
     YEDIS_ASSERT(ret == 0);
     ret = str[i]->init(c);
     YEDIS_ASSERT(ret == 0);
@@ -159,13 +159,13 @@ void test_treap_correct3(int ele_to_delete)
   int key[N]= {6,5,10,8,1,9,2,3,4,7};
   int rank[N] = {0};
   char c[20];
-  YedisNormalString *str[N] = {nullptr};
+  YedisString *str[N] = {nullptr};
   YedisTreap *p = (YedisTreap *)yedis_malloc(sizeof(YedisTreap));
   p->init();
   //insert
   for (i = 0; i < N; i++) {
     sprintf(c, "%d", i);
-    int ret = YedisNormalString::factory(c, str[i]);
+    int ret = YedisString::factory(c, str[i]);
     YEDIS_ASSERT(ret == 0);
     ret = str[i]->init(c);
     YEDIS_ASSERT(ret == 0);

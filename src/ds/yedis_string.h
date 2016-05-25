@@ -6,64 +6,51 @@ namespace yedis_datastructures
   class YedisString
   {
   public:
-    int init();
-    int init(char *data);
-    int append(const YedisString &other);
-    int append(const char *p);
-    bool is_empty() const {return nullptr == non_buffer_data_;}
-    ~YedisString();
-    int64_t length() const {return len_;}
-    char *ptr() {return non_buffer_data_;}
-    const char *ptr() const {return non_buffer_data_;}
-    int compare(char *p);
-    bool is_inited() {return len_ > 0;}
-  private:
-    int append_internal(const char *p, int64_t len);
-  private:
-    char *non_buffer_data_;
-    int64_t capacity_;
-    int64_t len_;
-  };
-  class YedisNormalString
-  {
-  public:
-    //when len > 0 and len < 64, we will store string in buffer_data_
     int init(char *str, int64_t len);
     int init(char *str);
-    ~YedisNormalString();
+    ~YedisString();
+    int append(const YedisString &other);
+    int append(const char *p);
+    int append(const char *p, int64_t len);
     YEDIS_MUST_INLINE const char *get_ptr() const
     {
       return data_;
     }
-    YEDIS_MUST_INLINE const bool is_equal(const char *p) const
+    YEDIS_MUST_INLINE bool is_equal(const char *p) const
     {
-      return !strcasecmp(p, data_);
+      return !strcmp(p, data_);
     }
-    YEDIS_MUST_INLINE const bool is_equal(const char *p, int64_t len) const
+    YEDIS_MUST_INLINE bool is_equal(const char *p, int64_t len) const
     {
-      return !strncasecmp(p, data_, len < len_ ? len : len_);
+      return !strncmp(p, data_, len < len_ ? len : len_);
     }
-    YEDIS_MUST_INLINE const bool is_equal(const YedisNormalString *other) const
+    YEDIS_MUST_INLINE bool is_equal(const YedisString *other) const
     {
-      return !strncasecmp(other->data_, data_, this->length() < other->length() ? this->length() : other->length());
+      return !strncmp(other->data_, data_, this->length() < other->length() ? this->length() : other->length());
     }
-    YEDIS_MUST_INLINE const int cmp(const char *p) const
+    YEDIS_MUST_INLINE int cmp(const char *p) const
     {
-      return strcasecmp(p, data_);
+      return strcmp(p, data_);
     }
-    YEDIS_MUST_INLINE const int cmp(const YedisNormalString *other) const
+    YEDIS_MUST_INLINE int cmp(const YedisString *other) const
     {
-      return strcasecmp(other->data_, data_);
+      return strcmp(other->data_, data_);
     }
-    YEDIS_MUST_INLINE const int64_t get_object_size() const
+    YEDIS_MUST_INLINE int64_t get_object_size() const
     {
-      return len_ < CHAR_LEN_THRESHOLD ? sizeof(YedisNormalString) + len_ + 1 : sizeof(YedisNormalString);
+      return len_ < CHAR_LEN_THRESHOLD ? sizeof(YedisString) + len_ + 1 : sizeof(YedisString);
     }
-    YEDIS_MUST_INLINE const int64_t length() const
+    YEDIS_MUST_INLINE int64_t length() const
     {
       return len_;
     }
-    static int factory(const char *p, YedisNormalString* &yn_str);
+    YEDIS_MUST_INLINE bool is_empty() const
+    {
+      return data_ == nullptr || len_ == 0;
+    }
+    static int factory(const char *p, YedisString* &yn_str);
+  private:
+    int append_internal(const char *p, int64_t len);
   private:
     static const int64_t CHAR_LEN_THRESHOLD = 48;
     int64_t len_;

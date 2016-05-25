@@ -10,11 +10,10 @@
 #include <errno.h>
 #include "../base/yedis_common.h"
 #include "../server/yedis_epoll.h"
-#include "../server/yedis_global_info.h"
+#include "../server/yedis_info_manager.h"
 #include "../server/yedis_order.h"
 namespace yedis_server
 {
-  extern yedis_server::YedisDBInfo dbi;
   int YedisEpoll::init()
   {
     int ret = YEDIS_SUCCESS;
@@ -86,7 +85,7 @@ namespace yedis_server
           exit(EXIT_FAILURE);
         } else if (res == 0) {
           fprintf(stderr, "memory used right now: %lld Bytes\n",
-              dbi.yedis_total_memory_used);
+              YedisServerInfoManager::get_total_memory_used());
           continue;
         }
 

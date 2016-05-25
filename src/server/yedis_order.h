@@ -84,7 +84,7 @@ namespace yedis_server
   {
     p->~YedisDSTypeNode<T>();
     yedis_free(p->val, sizeof(T));
-    yedis_free(p->key, sizeof(YedisNormalString));
+    yedis_free(p->key, sizeof(YedisString));
     yedis_free(p, sizeof(YedisDSTypeNode<T>));
   }
 
@@ -94,7 +94,7 @@ namespace yedis_server
 #define DEFINE_YEDIS_GET_DS_NODE(TYPE, member_field) \
   void yedis_ds_node_find(char *key, int key_length, TYPE* &out) \
   { \
-    out = ydbe[dbi.yedis_current_db_id].member_field; \
+    out = ydbe[YedisServerInfoManager::get_db_id()].member_field; \
     bool is_found = false; \
     while(nullptr != out) { \
       if(out->key->is_equal(key, key_length)) { \
@@ -108,8 +108,8 @@ namespace yedis_server
 #define CREATE_BLOOM_FILTER_NODE(n , m) \
   YedisBloomFilterDSNode *bfnode = nullptr;\
   YedisBloomFilter *bf = nullptr;\
-  YedisNormalString *string = nullptr;\
-  string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
+  YedisString *string = nullptr;\
+  string = static_cast<YedisString*>(yedis_malloc(sizeof(YedisString)));\
   if (YEDIS_UNLIKELY(nullptr == string)) {\
     ret = YEDIS_ERROR_NO_MEMORY;\
   } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
@@ -135,8 +135,8 @@ namespace yedis_server
 #define CREATE_YEDIS_TRIE_NODE(is_case_sensitive) \
   YedisTrieDSNode *trienode = nullptr;\
   YedisTrie<YedisTrieNode> *trie = nullptr;\
-  YedisNormalString *string = nullptr;\
-  string = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));\
+  YedisString *string = nullptr;\
+  string = static_cast<YedisString*>(yedis_malloc(sizeof(YedisString)));\
   if (YEDIS_UNLIKELY(nullptr == string)) {\
     ret = YEDIS_ERROR_NO_MEMORY;\
   } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
@@ -164,7 +164,7 @@ namespace yedis_server
 #define DEFINE_YEDIS_DEL_DS_NODE(TYPE, member_field) \
   void yedis_ds_node_del(TYPE *curr) \
   { \
-    TYPE *prev = ydbe[dbi.yedis_current_db_id].member_field; \
+    TYPE *prev = ydbe[YedisServerInfoManager::get_db_id()].member_field; \
     while(prev != nullptr) { \
       if (prev->next == curr) { \
         break; \
@@ -175,20 +175,20 @@ namespace yedis_server
     if (prev != nullptr) { \
       prev->next = curr->next; \
     } else { \
-      ydbe[dbi.yedis_current_db_id].member_field = curr->next; \
+      ydbe[YedisServerInfoManager::get_db_id()].member_field = curr->next; \
     } \
     reclaim_yedis_ds_type_node(curr); \
   }
 
 #define DECLARE_YEDIS_INSERT_DS_NODE(TYPE, RAW_TYPE, member_field) \
-  void yedis_ds_node_insert(TYPE *p, RAW_TYPE *q, YedisNormalString *string);
+  void yedis_ds_node_insert(TYPE *p, RAW_TYPE *q, YedisString *string);
 #define DEFINE_YEDIS_INSERT_DS_NODE(TYPE, RAW_TYPE, member_field) \
-  void yedis_ds_node_insert(TYPE *p, RAW_TYPE *q, YedisNormalString *string) \
+  void yedis_ds_node_insert(TYPE *p, RAW_TYPE *q, YedisString *string) \
   {         \
     p->val = q; \
     p->key = string; \
-    p->next = ydbe[dbi.yedis_current_db_id].member_field; \
-    ydbe[dbi.yedis_current_db_id].member_field = p; \
+    p->next = ydbe[YedisServerInfoManager::get_db_id()].member_field; \
+    ydbe[YedisServerInfoManager::get_db_id()].member_field = p; \
   }
 
 

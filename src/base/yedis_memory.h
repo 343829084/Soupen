@@ -1,19 +1,21 @@
 #ifndef YEDIS_MEMORY_H_
 #define YEDIS_MEMORY_H_
 #include "../base/yedis_common.h"
-#include "../server/yedis_global_info.h"
+#include "../server/yedis_info_manager.h"
 //memory allocation
-using yedis_server::dbi;
+
 #define yedis_malloc(size) ({ \
   int64_t tmp = size;  \
   void *p = malloc(tmp); \
-  __sync_fetch_and_add(&(dbi.yedis_total_memory_used), tmp);\
+  yedis_server::YedisServerInfoManager::update_total_memory_used(tmp);\
   p;})
+
+//memory reclaim
 
 #define yedis_free(p, size) ({ \
   int64_t tmp = size; \
   free(p); \
-  __sync_fetch_and_add(&(dbi.yedis_total_memory_used), -tmp);\
+  yedis_server::YedisServerInfoManager::update_total_memory_used(-tmp);\
   ;})
 
 template<typename T>

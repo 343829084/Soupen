@@ -1,5 +1,5 @@
 #include <sys/time.h>
-#include "../base/yedis_common.h"
+#include "../base/yedis_define.h"
 namespace yedis_lib
 {
   class YedisTime

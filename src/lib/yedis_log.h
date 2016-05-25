@@ -44,14 +44,19 @@ namespace yedis_lib
         os_<<__FILE__<<","<<__LINE__<<"["<<level_type<<"]"<<value<<std::endl;
       }
     }
+    inline static YedisLog& get_logger()
+    {
+      static YedisLog logger;
+      return logger;
+    }
   private:
     char buffer_[YedisTime::TIME_BUFFER_SIZE + 10];
     int64_t curr_time_;
     std::fstream os_;
   };
 
-#define LOG_WARN(output) logger.log(output, WARN);
+#define LOG_WARN(output) YedisLog::get_logger().log(output, WARN);
 
-#define LOG_ERROR(output) logger.log(output, ERROR);
+#define LOG_ERROR(output) YedisLog::get_logger().log(output, ERROR);
 
 }

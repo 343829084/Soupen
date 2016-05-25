@@ -1,1 +1,0 @@
-#include "../server/yedis_global_info.h"using namespace yedis_lib;namespace yedis_server{  YedisDBInfo dbi;  int64_t max_memory_limit = 10 * 1024 * 1024;  YedisLog logger;}

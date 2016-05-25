@@ -1,55 +1,13 @@
 #include "../ds/yedis_string.h"
 namespace yedis_datastructures
 {
-  using namespace yedis_server;
-  int YedisString::init()
-  {
-    non_buffer_data_ = nullptr;
-    len_ = 0;
-    capacity_ = 0;
-    return YEDIS_SUCCESS;
-  }
-  YedisString::~YedisString()
-  {
-    if (is_inited()) {
-      yedis_free(non_buffer_data_, capacity_);
-    }
-    len_ = -1;
-    capacity_ = -1;
-  }
-  int YedisString::init(char *str)
-  {
-    int ret = YEDIS_SUCCESS;
-    non_buffer_data_ = nullptr;
-    len_ = -1;
-    capacity_ = -1;
-    if (YEDIS_UNLIKELY(nullptr == str)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
-    } else {
-      int64_t len = strlen(str);
-      int64_t size = len * sizeof(char);
-      int64_t capacity = 2 * len;
-      char *tmp = static_cast<char*>(yedis_malloc(capacity));
-      if (YEDIS_UNLIKELY(nullptr == tmp)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
-      } else {
-        MEMCPY(tmp, str, size);
-        non_buffer_data_ = tmp;
-        len_ = len;
-        capacity_ = capacity;
-      }
-    }
-    return ret;
-  }
   int YedisString::append(const YedisString &other)
   {
     int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(other.len_ < 0 || other.len_ > YEDIS_INT64_MAX - len_)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
-    } else if (YEDIS_UNLIKELY(other.is_empty())) {
+    if (YEDIS_UNLIKELY(other.is_empty())) {
       //empty string. do nothing
     } else {
-      ret = append_internal(other.non_buffer_data_, other.len_);
+      ret = append_internal(other.data_, other.len_);
     }
     return ret;
   }
@@ -64,13 +22,17 @@ namespace yedis_datastructures
     }
     return ret;
   }
+  int YedisString::append(const char *p, int64_t len)
+  {
+    return append_internal(p, len);
+  }
   int YedisString::append_internal(const char *p, int64_t len)
   {
     int ret = YEDIS_SUCCESS;
     if (YEDIS_UNLIKELY(len <= 0 || len > YEDIS_INT64_MAX - len_)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else if (len_ + len <= capacity_) {
-      MEMCPY(non_buffer_data_ + len_, p, len * sizeof(char));
+      MEMCPY(data_ + len_, p, len * sizeof(char));
       len_ += len;
     } else {
       int new_buffer_len = len_ + len;
@@ -79,27 +41,18 @@ namespace yedis_datastructures
       if (YEDIS_UNLIKELY(nullptr == new_buffer)) {
         ret = YEDIS_ERROR_NO_MEMORY;
       } else {
-        MEMCPY(new_buffer, non_buffer_data_, len_ * sizeof(char));
+        MEMCPY(new_buffer, data_, len_ * sizeof(char));
         MEMCPY(new_buffer + len_, p, len  * sizeof(char));
-        yedis_free(non_buffer_data_, capacity_);
-        non_buffer_data_ = new_buffer;
+        yedis_free(data_, capacity_);
+        data_ = new_buffer;
         len_ += len;
         capacity_ = new_buffer_size;
       }
     }
     return ret;
   }
-  int YedisString::compare(char *p)
-  {
-    int ret = -1;
-    if (nullptr != p) {
-      ret = MEMCMP(non_buffer_data_, p, len_);
-    }
-    return ret;
-  }
 
-  /////////////////////////////////////////////////////////
-  int YedisNormalString::init(char *str, int64_t len)
+  int YedisString::init(char *str, int64_t len)
   {
     int ret = YEDIS_SUCCESS;
     data_ = nullptr;
@@ -112,18 +65,19 @@ namespace yedis_datastructures
       len_ = len;
       data_ = buffer_data_;
     } else {
-      char *tmp = static_cast<char*>(yedis_malloc(len));
+      char *tmp = static_cast<char*>(yedis_malloc(len + 1));
       if (YEDIS_UNLIKELY(nullptr == tmp)) {
         ret = YEDIS_ERROR_NO_MEMORY;
       } else {
         MEMCPY(tmp, str, len);
+        tmp[len] = '\0';
         data_ = tmp;
         len_ = len;
       }
     }
     return ret;
   }
-  int YedisNormalString::init(char *str)
+  int YedisString::init(char *str)
   {
     int ret = YEDIS_SUCCESS;
     data_ = nullptr;
@@ -132,23 +86,11 @@ namespace yedis_datastructures
     if (YEDIS_UNLIKELY(nullptr == str || (len = strlen(str)) <= 0)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else if (YEDIS_LIKELY(len < CHAR_LEN_THRESHOLD)) {
-      MEMCPY(buffer_data_, str, len);
-      buffer_data_[len] = '\0';
-      len_ = len;
-      data_ = buffer_data_;
-    } else {
-      char *tmp = static_cast<char*>(yedis_malloc(len));
-      if (YEDIS_UNLIKELY(nullptr == tmp)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
-      } else {
-        MEMCPY(tmp, str, len);
-        data_ = tmp;
-        len_ = len;
-      }
+      ret = init(str, len);
     }
     return ret;
   }
-  YedisNormalString::~YedisNormalString()
+  YedisString::~YedisString()
   {
     if (len_ >= CHAR_LEN_THRESHOLD && data_ != nullptr) {
       yedis_free(data_, len_);
@@ -156,18 +98,18 @@ namespace yedis_datastructures
     data_ = nullptr;
     len_ = -1;
   }
-  int YedisNormalString::factory(const char *p, YedisNormalString* &yn_str)
+  int YedisString::factory(const char *p, YedisString* &yn_str)
   {
     int ret = YEDIS_SUCCESS;
     int64_t len = 0;
     yn_str = nullptr;
-    YedisNormalString *tmp = nullptr;
+    YedisString *tmp = nullptr;
     if (YEDIS_UNLIKELY(nullptr == p || (len = strlen(p)) <= 0)) {
       ret = YEDIS_ERROR_INVALID_ARGUMENT;
     } else if (YEDIS_LIKELY(len < CHAR_LEN_THRESHOLD)) {
-      tmp = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString) + len + 1));
+      tmp = static_cast<YedisString*>(yedis_malloc(sizeof(YedisString) + len + 1));
     } else {
-      tmp = static_cast<YedisNormalString*>(yedis_malloc(sizeof(YedisNormalString)));
+      tmp = static_cast<YedisString*>(yedis_malloc(sizeof(YedisString)));
     }
     if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) {
       if (YEDIS_UNLIKELY(nullptr == tmp)) {
