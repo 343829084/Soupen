@@ -9,9 +9,6 @@ namespace yedis_datastructures
     int init(char *str, int64_t len);
     int init(char *str);
     ~YedisString();
-    int append(const YedisString &other);
-    int append(const char *p);
-    int append(const char *p, int64_t len);
     YEDIS_MUST_INLINE const char *get_ptr() const
     {
       return data_;
@@ -49,8 +46,6 @@ namespace yedis_datastructures
       return data_ == nullptr || len_ == 0;
     }
     static int factory(const char *p, YedisString* &yn_str);
-  private:
-    int append_internal(const char *p, int64_t len);
   private:
     static const int64_t CHAR_LEN_THRESHOLD = 48;
     int64_t len_;

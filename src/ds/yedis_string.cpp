@@ -1,57 +1,6 @@
 #include "../ds/yedis_string.h"
 namespace yedis_datastructures
 {
-  int YedisString::append(const YedisString &other)
-  {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(other.is_empty())) {
-      //empty string. do nothing
-    } else {
-      ret = append_internal(other.data_, other.len_);
-    }
-    return ret;
-  }
-  int YedisString::append(const char *p)
-  {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(nullptr == p)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
-    } else {
-      int64_t len = strlen(p);
-      ret = append_internal(p, len);
-    }
-    return ret;
-  }
-  int YedisString::append(const char *p, int64_t len)
-  {
-    return append_internal(p, len);
-  }
-  int YedisString::append_internal(const char *p, int64_t len)
-  {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(len <= 0 || len > YEDIS_INT64_MAX - len_)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
-    } else if (len_ + len <= capacity_) {
-      MEMCPY(data_ + len_, p, len * sizeof(char));
-      len_ += len;
-    } else {
-      int new_buffer_len = len_ + len;
-      int64_t new_buffer_size = 2 * new_buffer_len * sizeof(char);
-      char *new_buffer = (char*) yedis_malloc(new_buffer_size);
-      if (YEDIS_UNLIKELY(nullptr == new_buffer)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
-      } else {
-        MEMCPY(new_buffer, data_, len_ * sizeof(char));
-        MEMCPY(new_buffer + len_, p, len  * sizeof(char));
-        yedis_free(data_, capacity_);
-        data_ = new_buffer;
-        len_ += len;
-        capacity_ = new_buffer_size;
-      }
-    }
-    return ret;
-  }
-
   int YedisString::init(char *str, int64_t len)
   {
     int ret = YEDIS_SUCCESS;

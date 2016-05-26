@@ -14,6 +14,7 @@ namespace yedis_sync
     bool lock()
     {
       uint64_t my_id = FETCH_AND_ADD(&next_id_, 1);
+      CPU_BARRIER();
       while(my_id != ACCESS_ONCE(service_id_)) {}
       return true;
     }
