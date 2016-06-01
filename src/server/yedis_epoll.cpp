@@ -48,6 +48,7 @@ namespace yedis_server
     } else if (fcntl(sock_, F_SETFL, flags | O_NONBLOCK) < 0) {
       ret = YEDIS_ERROR_UNEXPECTED;
     }
+    return ret;
   }
   int YedisEpoll::work()
   {
@@ -86,6 +87,7 @@ namespace yedis_server
         } else if (res == 0) {
           fprintf(stderr, "memory used right now: %lld Bytes\n",
               YedisServerInfoManager::get_total_memory_used());
+          LOG_WARN("memory used right now is = %lld", YedisServerInfoManager::get_total_memory_used());
           continue;
         }
 

@@ -1,31 +1,25 @@
-#include <sys/time.h>
+#include <time.h>
 #include "../base/yedis_define.h"
 namespace yedis_lib
 {
   class YedisTime
   {
   public:
-    static void get_curr_datetime(char *p, int64_t *usecond = nullptr)
+    static char *get_curr_datetime(const char *format)
     {
-      if (usecond != nullptr) {
-        time_t nowtime = *usecond / 1000000 * 1000000;
-        struct tm *nowtm = localtime(&nowtime);
-        strftime(p, TIME_BUFFER_SIZE, "%Y-%m-%d %H:%M:%S", nowtm);
-      } else {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        time_t nowtime = tv.tv_sec;
-        struct tm *nowtm = localtime(&nowtime);
-        strftime(p, TIME_BUFFER_SIZE, "%Y-%m-%d %H:%M:%S", nowtm);
-      }
+      time_t tmp_time;
+      time(&tmp_time);
+      struct tm* ti = localtime(&tmp_time);
+      static char buffer[64];
+      strftime(buffer, sizeof(buffer), format, ti);
+      return buffer;
     }
     static int64_t get_curr_datetime()
     {
-      struct timeval tv;
-      gettimeofday(&tv, NULL);
-      return tv.tv_sec * 1000000 + tv.tv_usec;
+      time_t tmp_time;
+      time(&tmp_time);
+      return tmp_time;
     }
-    static const int64_t TIME_BUFFER_SIZE = 64;
-    static const int64_t USECONDS_PER_HOUR = 3600000000LL;
+    static const int64_t INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND = 10;
   };
 }
