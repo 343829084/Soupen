@@ -15,8 +15,8 @@ namespace soupen_lib
     SoupenLog()
     {
       fp_ = nullptr;
-      log_time_ = SoupenTime::get_curr_datetime();
-      get_log_name(&log_time_);
+      last_log_time_ = SoupenTime::get_curr_datetime();
+      set_log_name();
       fp_= fopen(buffer_, "a+");
       if (nullptr == fp_) {
         exit(0);
@@ -29,7 +29,7 @@ namespace soupen_lib
         fp_ = nullptr;
       }
     }
-    void get_log_name(int64_t *usecond)
+    void set_log_name()
     {
       const char *datetime = SoupenTime::get_curr_datetime("%Y%m%d%H%M%S");
       strcpy(buffer_, datetime);
@@ -42,21 +42,21 @@ namespace soupen_lib
     }
     inline bool is_create_new_log_file(int64_t last_time, int64_t current_time)
     {
-      return current_time - last_time > SoupenTime::INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND;
+      return current_time - last_time > INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND;
     }
     inline FILE *get_fp()
     {
       FILE *fp = nullptr;
       int64_t curr_time = SoupenTime::get_curr_datetime();
-      if (is_create_new_log_file(log_time_, curr_time)) {
+      if (is_create_new_log_file(last_log_time_, curr_time)) {
         fclose(fp_);
-        get_log_name(&curr_time);
+        set_log_name();
         fp_ = fopen(buffer_, "a+");
         if (fp_ == nullptr) {
           exit(0);
         }
         fp = fp_;
-        log_time_ = curr_time;
+        last_log_time_ = curr_time;
       } else {
         fp = fp_;
       }
@@ -64,8 +64,9 @@ namespace soupen_lib
     }
   private:
     char buffer_[64];
-    int64_t log_time_;
+    int64_t last_log_time_;
     FILE *fp_;
+    static const int64_t INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND = 1 * 60 * 60;
   };
 
   #define __LOG__(format, loglevel, ...)  \

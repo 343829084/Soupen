@@ -87,7 +87,6 @@ namespace soupen_server
         } else if (res == 0) {
           fprintf(stderr, "memory used right now: %lld Bytes\n",
               SoupenServerInfoManager::get_total_memory_used());
-          LOG_WARN("memory used right now is = %lld", SoupenServerInfoManager::get_total_memory_used());
           continue;
         }
 

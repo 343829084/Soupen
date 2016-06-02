@@ -20,6 +20,5 @@ namespace soupen_lib
       time(&tmp_time);
       return tmp_time;
     }
-    static const int64_t INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND = 10;
   };
 }
