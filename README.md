@@ -1,21 +1,21 @@
-## Yedis
+## Soupen
 
-Yedis is a high performance memory nosql database.
+Soupen is a high performance memory nosql database.
 
 It is designed to replace redis.
 
-Yedis means Yebangyu + redis. LOL.
+Soupen means Yebangyu + redis. LOL.
 
 ## How to build
 
-g++ -O2 src/server/yedis_info_manager.cpp src/server/yedis_db.cpp src/ds/yedis_string.cpp src/ds/yedis_treap.cpp src/ds/yedis_bloom_filter.cpp src/server/yedis_order.cpp src/server/yedis_epoll.cpp src/server/yedis_server.cpp -o yedis_server
+g++ -O2 src/server/soupen_info_manager.cpp src/server/soupen_db.cpp src/ds/soupen_string.cpp src/ds/soupen_treap.cpp src/ds/soupen_bloom_filter.cpp src/server/soupen_order.cpp src/server/soupen_epoll.cpp src/server/soupen_server.cpp -o soupen_server
 
-src/server/yedis_server
+src/server/soupen_server
 
 
 ## How to use
 
-python src/client/yedis_client.py
+python src/client/soupen_client.py
 
 ## Feature Supported Right Now
 
@@ -31,11 +31,11 @@ bfadd DB mysql //ok
 
 bfadd DB redis //ok
 
-bfadd DB yedis //ok
+bfadd DB soupen //ok
 
 bfadd DB oracle //ok
 
-bfcontains DB yedis //true
+bfcontains DB soupen //true
 
 bfcontains DB oracle //true
 
@@ -49,11 +49,11 @@ tset db mysql 1 //ok
 
 tset db redis 1 //ok.
 
-tset db yedis 1 //ok
+tset db soupen 1 //ok
 
 //1 means case sensitive, while 0 means not.
 
-tcontains db yedis //true
+tcontains db soupen //true
 
 tcontains db redis //true
 
