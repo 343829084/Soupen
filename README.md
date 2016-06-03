@@ -6,9 +6,11 @@ It is designed to replace redis.
 
 ## How to build
 
+cd Soupen
+
 g++ -O2 src/server/soupen_info_manager.cpp src/server/soupen_db.cpp src/ds/soupen_string.cpp src/ds/soupen_treap.cpp src/ds/soupen_bloom_filter.cpp src/server/soupen_order.cpp src/server/soupen_epoll.cpp src/server/soupen_server.cpp -o soupen_server
 
-src/server/soupen_server
+./soupen_server
 
 
 ## How to use

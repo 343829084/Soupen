@@ -12,7 +12,7 @@ namespace soupen_lib
     {
       last_log_time_ = SoupenTime::get_curr_datetime();
       set_log_name();
-      os_.open(buffer_);
+      os_.open(buffer_, std::ios::out);
       if (!os_.is_open()) {
         exit(0);
       }
@@ -44,7 +44,7 @@ namespace soupen_lib
       if (is_create_new_log_file(last_log_time_, curr_time)) {
         os_.close();
         set_log_name();
-        os_.open(buffer_);
+        os_.open(buffer_, std::ios::out);
         if (!os_.is_open()) {
           exit(0);
         }
@@ -59,26 +59,29 @@ namespace soupen_lib
     static const int64_t INTERVAL_TO_CREATE_NEW_LOG_IN_SECOND = 1 * 60 * 60;
   };
 
-#define P(x) ","<<#x<<" = "<<x
-#define log1(log_info) \
-  os<<log_info<<std::endl;
-#define log2(log_info, log_content1) \
-  os<<log_info<<log_content1<<std::endl;
-#define log3(log_info, log_content1, log_content2) \
-  os<<log_info<<log_content1<<log_content2<<std::endl;
-#define log4(log_info, log_content1, log_content2, log_content3) \
-  os<<log_info<<log_content1<<log_content2<<log_content3<<std::endl;
-#define log5(log_info, log_content1, log_content2, log_content3, log_content4) \
-  os<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<std::endl;
-#define log6(log_info, log_content1, log_content2, log_content3, log_content4, log_content5) \
-  os<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<log_content5<<std::endl;
-#define log7(log_info, log_content1, log_content2, log_content3, log_content4, log_content5, log_content6) \
-  os<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<log_content5<<log_content6<<std::endl;
+  #define P(x) ","<<#x<<" = "<<x
 
-#define GET_LOG_FUN_NAME(_0, _1, _2, _3, _4, _5, _6, _7, FUNC, ...) FUNC
-#define Soupen_LOG(...) \
-  std::fstream &os = SoupenLogV2::get_logger().get_os();\
-  GET_LOG_FUN_NAME(_0, ##__VA_ARGS__, log7, log6, log5, log4, log3, log2, log1, log0)(__VA_ARGS__)
+  #define soupen_log1(log_info) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<std::endl;
+  #define soupen_log2(log_info, log_content1) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<std::endl;
+  #define soupen_log3(log_info, log_content1, log_content2) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<log_content2<<std::endl;
+  #define soupen_log4(log_info, log_content1, log_content2, log_content3) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<log_content2<<log_content3<<std::endl;
+  #define soupen_log5(log_info, log_content1, log_content2, log_content3, log_content4) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<std::endl;
+  #define soupen_log6(log_info, log_content1, log_content2, log_content3, log_content4, log_content5) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<log_content5<<std::endl;
+  #define soupen_log7(log_info, log_content1, log_content2, log_content3, log_content4, log_content5, log_content6) \
+    os<<datetime<<"["<<__func__<<"]"<< __FILE__<< ":"<<__LINE__<<"<****>"<<log_info<<log_content1<<log_content2<<log_content3<<log_content4<<log_content5<<log_content6<<std::endl;
 
+  #define GET_LOG_FUN_NAME(_0, _1, _2, _3, _4, _5, _6, _7, FUNC, ...) FUNC
+
+  #define Soupen_LOG(...) \
+    std::fstream &os = SoupenLogV2::get_logger().get_os();\
+    const char *dt_fmt = "%Y-%m-%d %H:%M:%S";\
+    char *datetime = soupen_lib::SoupenTime::get_curr_datetime(dt_fmt);\
+    GET_LOG_FUN_NAME(_0, ##__VA_ARGS__, soupen_log7, soupen_log6, soupen_log5, soupen_log4, soupen_log3, soupen_log2, soupen_log1, soupen_log0)(__VA_ARGS__)
 }
 #endif /*SOUPEN_LOG_V2_H_*/
