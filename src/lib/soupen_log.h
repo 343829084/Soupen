@@ -1,3 +1,5 @@
+#ifndef SOUPEN_LOG_H_
+#define SOUPEN_LOG_H_
 #include "../lib/soupen_time.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -46,7 +48,6 @@ namespace soupen_lib
     }
     inline FILE *get_fp()
     {
-      FILE *fp = nullptr;
       int64_t curr_time = SoupenTime::get_curr_datetime();
       if (is_create_new_log_file(last_log_time_, curr_time)) {
         fclose(fp_);
@@ -55,12 +56,9 @@ namespace soupen_lib
         if (fp_ == nullptr) {
           exit(0);
         }
-        fp = fp_;
         last_log_time_ = curr_time;
-      } else {
-        fp = fp_;
       }
-      return fp;
+      return fp_;
     }
   private:
     char buffer_[64];
@@ -81,3 +79,4 @@ namespace soupen_lib
   #define LOG_INFO(format, ...) __LOG__(format, INFO, ## __VA_ARGS__)
 
 }
+#endif /*SOUPEN_LOG_H_*/

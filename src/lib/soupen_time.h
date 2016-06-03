@@ -1,3 +1,5 @@
+#ifndef SOUPEN_TIME_H_
+#define SOUPEN_TIME_H_
 #include <time.h>
 #include "../base/soupen_define.h"
 namespace soupen_lib
@@ -22,3 +24,4 @@ namespace soupen_lib
     }
   };
 }
+#endif /*SOUPEN_TIME_H_*/
