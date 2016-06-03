@@ -1,5 +1,5 @@
-#ifndef YEDIS_TREAP_H_
-#define YEDIS_TREAP_H_
+#ifndef SOUPEN_TREAP_H_
+#define SOUPEN_TREAP_H_
 #include "../ds/soupen_string.h"
 namespace soupen_datastructures
 {
@@ -31,14 +31,14 @@ namespace soupen_datastructures
     int init();
     ~SoupenTreap();
     SoupenTreapNode *find(const char *str, const double score);
-    YEDIS_MUST_INLINE SoupenTreapNode *find(const SoupenString *ele, const double score) {return find(ele->get_ptr(), score);}
+    SOUPEN_MUST_INLINE SoupenTreapNode *find(const SoupenString *ele, const double score) {return find(ele->get_ptr(), score);}
     int insert(const char *str, const double score);
     int insert(SoupenString *ele, const double score);
     int remove(const char *str, const double score);
     int remove(const SoupenString *ele, const double score);
     int get_rank(const char *str, const double score);
-    YEDIS_MUST_INLINE int get_rank(const SoupenString *ele, const double score) {return get_rank(ele->get_ptr(), score);}
-    YEDIS_MUST_INLINE int size() {return size_;}
+    SOUPEN_MUST_INLINE int get_rank(const SoupenString *ele, const double score) {return get_rank(ele->get_ptr(), score);}
+    SOUPEN_MUST_INLINE int size() {return size_;}
     SoupenTreapNode *find_max();
     SoupenTreapNode *find_min();
   private:
@@ -47,7 +47,7 @@ namespace soupen_datastructures
     int insert(SoupenString *ele, const double score, SoupenTreapNode *&treap);
     SoupenTreapNode *left_rotation(SoupenTreapNode *k1, SoupenTreapNode *k2);
     SoupenTreapNode *right_rotation(SoupenTreapNode *k1, SoupenTreapNode *k2);
-    YEDIS_MUST_INLINE static int size(SoupenTreapNode *p) {return p->size;}
+    SOUPEN_MUST_INLINE static int size(SoupenTreapNode *p) {return p->size;}
   private:
     SoupenTreapNode *root_;
     SoupenTreapNode *sentinel_;
@@ -55,4 +55,4 @@ namespace soupen_datastructures
   };
 }
 
-#endif /* YEDIS_TREAP_H_ */
+#endif /* SOUPEN_TREAP_H_ */

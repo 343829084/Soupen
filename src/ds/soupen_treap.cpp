@@ -3,20 +3,20 @@ namespace soupen_datastructures
 {
   #define INSERT(subtree1, substree2) \
    insert(ele, score, treap->subtree1); \
-   if (YEDIS_LIKELY(YEDIS_SUCCESS == ret)) { \
+   if (SOUPEN_LIKELY(SOUPEN_SUCCESS == ret)) { \
      ++treap->size;\
-     if (YEDIS_UNLIKELY(treap->subtree1->priority > treap->priority)) { \
+     if (SOUPEN_UNLIKELY(treap->subtree1->priority > treap->priority)) { \
        treap = substree2##_rotation(treap, treap->subtree1);\
      }\
    }
 
   SoupenTreap::~SoupenTreap()
   {
-    if (YEDIS_LIKELY(root_ != nullptr)) {
+    if (SOUPEN_LIKELY(root_ != nullptr)) {
       gc_help(root_);
       root_ = nullptr;
     }
-    if (YEDIS_LIKELY(sentinel_ != nullptr)) {
+    if (SOUPEN_LIKELY(sentinel_ != nullptr)) {
       sentinel_->~SoupenTreapNode();
       soupen_free(sentinel_, sizeof(SoupenTreapNode));
       sentinel_ = nullptr;
@@ -25,7 +25,7 @@ namespace soupen_datastructures
 
   void SoupenTreap::gc_help(SoupenTreapNode *p)
   {
-    if (YEDIS_LIKELY(p != sentinel_)) {
+    if (SOUPEN_LIKELY(p != sentinel_)) {
       gc_help(p->left);
       gc_help(p->right);
       p->~SoupenTreapNode();
@@ -35,17 +35,17 @@ namespace soupen_datastructures
 
   int SoupenTreap::init()
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     sentinel_ = root_ = nullptr;
     SoupenTreapNode *tmp = nullptr;
-    if (YEDIS_UNLIKELY(nullptr == (tmp = static_cast<SoupenTreapNode*>(soupen_malloc(sizeof(SoupenTreapNode)))))) {
-      ret = YEDIS_ERROR_NO_MEMORY;
+    if (SOUPEN_UNLIKELY(nullptr == (tmp = static_cast<SoupenTreapNode*>(soupen_malloc(sizeof(SoupenTreapNode)))))) {
+      ret = SOUPEN_ERROR_NO_MEMORY;
     } else {
       tmp->ele = nullptr;
       tmp->size = 0;
       tmp->score = 0.0;
       tmp->left = tmp->right = tmp;
-      tmp->priority = YEDIS_UINT64_MIN;
+      tmp->priority = SOUPEN_UINT64_MIN;
       sentinel_ = tmp;
       root_ = sentinel_;//important !
       size_ = 0;//sentinel does not count.
@@ -55,9 +55,9 @@ namespace soupen_datastructures
 
   int SoupenTreap::insert(const char *str, const double score)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     SoupenString *ele = nullptr;
-    if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = SoupenString::factory(str, ele)))) {
+    if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = SoupenString::factory(str, ele)))) {
       //do nothing
     } else {
       ret = insert(ele, score);
@@ -67,23 +67,23 @@ namespace soupen_datastructures
 
   int SoupenTreap::insert(SoupenString *ele, const double score)
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(nullptr == sentinel_)) {
-      ret = YEDIS_ERROR_NOT_INITED;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(nullptr == sentinel_)) {
+      ret = SOUPEN_ERROR_NOT_INITED;
     } else {
       ret = insert(ele, score, root_);
-      this->size_ += (YEDIS_SUCCESS == ret);
+      this->size_ += (SOUPEN_SUCCESS == ret);
     }
     return ret;
   }
 
   int SoupenTreap::insert(SoupenString *ele, const double score, SoupenTreapNode *&treap)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     int cmp = 0;
     if (treap == sentinel_) {
-      if (YEDIS_UNLIKELY(nullptr == (treap = static_cast<SoupenTreapNode*>(soupen_malloc(sizeof(SoupenTreapNode)))))) {
-        ret = YEDIS_ERROR_NO_MEMORY;
+      if (SOUPEN_UNLIKELY(nullptr == (treap = static_cast<SoupenTreapNode*>(soupen_malloc(sizeof(SoupenTreapNode)))))) {
+        ret = SOUPEN_ERROR_NO_MEMORY;
         LOG_WARN("no memory. allocate failed in redis");
       } else {
         treap->ele = ele;
@@ -101,7 +101,7 @@ namespace soupen_datastructures
     } else if (/*same score and cmp < 0*/cmp < 0) {
       INSERT(right, left);
     } else /*same score and cmp = 0*/{
-      ret = YEDIS_ERROR_ENTRY_ALREADY_EXISTS;
+      ret = SOUPEN_ERROR_ENTRY_ALREADY_EXISTS;
     }
     return ret;
   }
@@ -187,36 +187,36 @@ namespace soupen_datastructures
   int SoupenTreap::remove(const char *str, const double score, SoupenTreapNode *&treap)
   {
     int cmp = 0;
-    int ret = YEDIS_ERROR_ENTRY_NOT_EXIST;
+    int ret = SOUPEN_ERROR_ENTRY_NOT_EXIST;
     if (treap != sentinel_) {
       if (treap->score > score) {
         ret = remove(str, score, treap->left);
-        treap->size -= (YEDIS_SUCCESS == ret);
+        treap->size -= (SOUPEN_SUCCESS == ret);
       } else if (treap->score < score) {
         ret = remove(str, score, treap->right);
-        treap->size -= (YEDIS_SUCCESS == ret);
+        treap->size -= (SOUPEN_SUCCESS == ret);
       } else if (/*same score and cmp = 0*/(cmp = treap->ele->cmp(str)) > 0) { //found
         ret = remove(str, score, treap->left);
-        treap->size -= (YEDIS_SUCCESS == ret);
+        treap->size -= (SOUPEN_SUCCESS == ret);
       } else if (/*same score and cmp > 0*/cmp < 0) {
         ret = remove(str, score, treap->right);
-        treap->size -= (YEDIS_SUCCESS == ret);
+        treap->size -= (SOUPEN_SUCCESS == ret);
       } else /*if (cmp == 0)*/ {
-        ret = YEDIS_SUCCESS;
+        ret = SOUPEN_SUCCESS;
         if (treap->left == sentinel_ && treap->right == sentinel_) {
           soupen_reclaim(treap);
         } else if (treap->left->priority > treap->right->priority) {
           treap = right_rotation(treap, treap->left);
           ret = remove(str, score, treap->right);
-          treap->size -= (YEDIS_SUCCESS == ret);
+          treap->size -= (SOUPEN_SUCCESS == ret);
         } else {
           treap = left_rotation(treap, treap->right);
           ret = remove(str, score, treap->left);
-          treap->size -= (YEDIS_SUCCESS == ret);
+          treap->size -= (SOUPEN_SUCCESS == ret);
         }
       }
     }
-    size_ -= (YEDIS_SUCCESS == ret);
+    size_ -= (SOUPEN_SUCCESS == ret);
     return ret;
   }
 
@@ -224,7 +224,7 @@ namespace soupen_datastructures
   SoupenTreapNode *SoupenTreap::find_min()
   {
     SoupenTreapNode *tmp = root_;
-    if (YEDIS_UNLIKELY(sentinel_ == tmp)) {
+    if (SOUPEN_UNLIKELY(sentinel_ == tmp)) {
       return nullptr;
     }
     while(true) {
@@ -240,7 +240,7 @@ namespace soupen_datastructures
   SoupenTreapNode *SoupenTreap::find_max()
   {
     SoupenTreapNode *tmp = root_;
-    if (YEDIS_UNLIKELY(sentinel_ == tmp)) {
+    if (SOUPEN_UNLIKELY(sentinel_ == tmp)) {
       return nullptr;
     }
     while(true) {

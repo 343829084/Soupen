@@ -1,5 +1,5 @@
-#ifndef YEDIS_SERVER_EPOLL_H
-#define YEDIS_SERVER_EPOLL_H
+#ifndef SOUPEN_SERVER_EPOLL_H
+#define SOUPEN_SERVER_EPOLL_H
 namespace soupen_server
 {
   class SoupenEpoll
@@ -16,4 +16,4 @@ namespace soupen_server
     static const int EPOLL_TIMEOUT = 5000;
   };
 }
-#endif /*YEDIS_SERVER_EPOLL_H*/
+#endif /*SOUPEN_SERVER_EPOLL_H*/

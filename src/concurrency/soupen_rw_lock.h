@@ -3,8 +3,8 @@
  *unfair Reader-Writer lock implementation with reader preferment .
  *If a thread can not get lock, it will spin.
  */
-#ifndef YEDIS_RW_LOCK_H_
-#define YEDIS_RW_LOCK_H_
+#ifndef SOUPEN_RW_LOCK_H_
+#define SOUPEN_RW_LOCK_H_
 #include "../base/soupen_common.h"
 namespace soupen_sync
 {

@@ -16,14 +16,14 @@ namespace soupen_server
 {
   int SoupenEpoll::init()
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     int yes = 1;
 
     if ((sock_ = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     } else if(setsockopt(sock_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))) {
-      ret = YEDIS_ERROR_UNEXPECTED;
-    } else if(YEDIS_SUCCESS != (ret = set_socket_nonblocking(sock_))) {
+      ret = SOUPEN_ERROR_UNEXPECTED;
+    } else if(SOUPEN_SUCCESS != (ret = set_socket_nonblocking(sock_))) {
 
     } else {
 
@@ -34,37 +34,37 @@ namespace soupen_server
       bind_addr.sin_port = htons(DEFAULT_PORT);
 
       if (bind(sock_, (struct sockaddr *) &bind_addr, sizeof(bind_addr)) == -1) {
-        ret = YEDIS_ERROR_UNEXPECTED;
+        ret = SOUPEN_ERROR_UNEXPECTED;
       }
     }
     return ret;
   }
   int SoupenEpoll::set_socket_nonblocking(int sock_)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     int flags = fcntl(sock_, F_GETFL, 0);
     if (flags < 0) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     } else if (fcntl(sock_, F_SETFL, flags | O_NONBLOCK) < 0) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     }
     return ret;
   }
   int SoupenEpoll::work()
   {
     //listen
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     int epfd;
     char response[12 * 1024];
     struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = sock_;
     if (listen(sock_, 5) == -1) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     } else if ((epfd = epoll_create(1)) == -1) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     } else if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_, &event) == -1) {
-      ret = YEDIS_ERROR_UNEXPECTED;
+      ret = SOUPEN_ERROR_UNEXPECTED;
     } else {
 
       struct epoll_event events[EPOLL_MAXEVENTS];

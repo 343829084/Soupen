@@ -1,5 +1,5 @@
-#ifndef YEDIS_HASH_H
-#define YEDIS_HASH_H
+#ifndef SOUPEN_HASH_H
+#define SOUPEN_HASH_H
 #define SEED1 0xEE6B27EB
 #define SEED2 109
 static uint64_t upper_power_of_two(uint64_t v)

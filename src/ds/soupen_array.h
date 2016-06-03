@@ -1,5 +1,5 @@
-#ifndef YEDIS_ARRAY_H_
-#define YEDIS_ARRAY_H_
+#ifndef SOUPEN_ARRAY_H_
+#define SOUPEN_ARRAY_H_
 #include "../base/soupen_common.h"
 #include <new>
 namespace soupen_datastructures
@@ -16,8 +16,8 @@ namespace soupen_datastructures
     int at(int index, T &obj);
     T& at(int index);
     const T& at(int index) const;
-    YEDIS_MUST_INLINE int64_t get_capacity() const {return table_counts_ * TABLE_SIZE;}
-    YEDIS_MUST_INLINE int64_t get_size() const {return count_;}
+    SOUPEN_MUST_INLINE int64_t get_capacity() const {return table_counts_ * TABLE_SIZE;}
+    SOUPEN_MUST_INLINE int64_t get_size() const {return count_;}
   private:
     int init();
     int re_alloc();
@@ -42,13 +42,13 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::init()
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     char *p = nullptr;
     T **tmp = nullptr;
     if (nullptr == (tmp = new (std::nothrow) T*[1])) {
-      ret = YEDIS_ERROR_NOT_INITED;
+      ret = SOUPEN_ERROR_NOT_INITED;
     } else if (nullptr == (p = new (std::nothrow) char[sizeof(T) * TABLE_SIZE])) {
-      ret = YEDIS_ERROR_NOT_INITED;
+      ret = SOUPEN_ERROR_NOT_INITED;
       delete []tmp;
     } else {
       tmp[0] = reinterpret_cast<T*>(p);
@@ -87,12 +87,12 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::push_back(const T &obj)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     int64_t tbl_idx = 0;
     int64_t slot_idx = 0;
     get_table_slot_idx(count_, tbl_idx, slot_idx);
-    if (YEDIS_UNLIKELY(!is_inited_)) {
-      ret = YEDIS_ERROR_NOT_INITED;
+    if (SOUPEN_UNLIKELY(!is_inited_)) {
+      ret = SOUPEN_ERROR_NOT_INITED;
     } else if (count_ < get_capacity()) {
       if (count_ < obj_allocated_count_) {
         data_[tbl_idx][slot_idx] = obj;//just reuse old objs
@@ -102,7 +102,7 @@ namespace soupen_datastructures
       }
       ++count_;
     } else {
-      if (YEDIS_SUCCESS == (ret = re_alloc())) {
+      if (SOUPEN_SUCCESS == (ret = re_alloc())) {
         new (&data_[tbl_idx][0]) T(obj);
         ++obj_allocated_count_;
         ++count_;
@@ -113,11 +113,11 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::pop()
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
-      ret = YEDIS_ERROR_NOT_INITED;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited_)) {
+      ret = SOUPEN_ERROR_NOT_INITED;
     } else if (count_ <= 0) {
-      ret = YEDIS_ERROR_EMPTY;
+      ret = SOUPEN_ERROR_EMPTY;
     } else {
       count_--;
     }
@@ -126,11 +126,11 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::top(T &obj) const
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
-      ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(count_ <= 0)) {
-      ret = YEDIS_ERROR_EMPTY;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited_)) {
+      ret = SOUPEN_ERROR_NOT_INITED;
+    } else if (SOUPEN_UNLIKELY(count_ <= 0)) {
+      ret = SOUPEN_ERROR_EMPTY;
     } else {
       int64_t tbl_idx = 0;
       int64_t slot_idx = 0;
@@ -142,13 +142,13 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::re_alloc()
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     T **tmp = nullptr;
     char *p = nullptr;
     if (nullptr == (tmp = new T*[table_counts_ + 1])) {
-      ret = YEDIS_ERROR_NO_MEMORY;
+      ret = SOUPEN_ERROR_NO_MEMORY;
     } else if (nullptr == (p = new char[sizeof(T) * TABLE_SIZE])) {
-      ret = YEDIS_ERROR_NO_MEMORY;
+      ret = SOUPEN_ERROR_NO_MEMORY;
       delete [] tmp;
     } else {
       for (int i = 0 ; i < table_counts_; ++i) {
@@ -164,11 +164,11 @@ namespace soupen_datastructures
   template<typename T, int64_t TABLE_SIZE>
   int SoupenArray<T, TABLE_SIZE>::at(int index, T &obj)
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited_)) {
-      ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(index < 0 || index >= count_)) {
-      ret = YEDIS_ERROR_INDEX_OUT_OF_RANGE;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited_)) {
+      ret = SOUPEN_ERROR_NOT_INITED;
+    } else if (SOUPEN_UNLIKELY(index < 0 || index >= count_)) {
+      ret = SOUPEN_ERROR_INDEX_OUT_OF_RANGE;
     } else {
       int64_t tbl_idx = 0;
       int64_t slot_idx = 0;
@@ -201,4 +201,4 @@ namespace soupen_datastructures
   }
 }
 
-#endif /* YEDIS_ARRAY_H_ */
+#endif /* SOUPEN_ARRAY_H_ */

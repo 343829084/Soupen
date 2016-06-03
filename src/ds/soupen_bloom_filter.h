@@ -1,5 +1,5 @@
-#ifndef YEDIS_BLOOM_FILTER_H_
-#define YEDIS_BLOOM_FILTER_H_
+#ifndef SOUPEN_BLOOM_FILTER_H_
+#define SOUPEN_BLOOM_FILTER_H_
 #include "../ds/soupen_string.h"
 namespace soupen_datastructures
 {
@@ -27,4 +27,4 @@ namespace soupen_datastructures
     static const int DEFAULT_M = 1000;
   };
 }
-#endif /*YEDIS_BLOOM_FILTER_H_*/
+#endif /*SOUPEN_BLOOM_FILTER_H_*/

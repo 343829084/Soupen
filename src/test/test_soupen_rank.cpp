@@ -74,27 +74,27 @@ void test_treap_correct()
   for (i = 0; i < N; i++) {
     sprintf(c, "%d", key[i]);
     int ret = SoupenString::factory(c, str[i]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = str[i]->init(c);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = p->insert(str[i], key[i]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
   }
   //size
   int size = p->size();
-  YEDIS_ASSERT(size == N);
+  SOUPEN_ASSERT(size == N);
   //min max
   SoupenTreapNode *pmin = p->find_min();
-  YEDIS_ASSERT(pmin != nullptr);
-  YEDIS_ASSERT(pmin->score == 1);
+  SOUPEN_ASSERT(pmin != nullptr);
+  SOUPEN_ASSERT(pmin->score == 1);
   SoupenTreapNode *pmax = p->find_max();
-  YEDIS_ASSERT(pmax != nullptr);
-  YEDIS_ASSERT(pmax->score == N);
+  SOUPEN_ASSERT(pmax != nullptr);
+  SOUPEN_ASSERT(pmax->score == N);
   //find
   for (i = 0; i < N; i++) {
     SoupenTreapNode *res = p->find(str[i], key[i]);
-    YEDIS_ASSERT(res != nullptr);
-    YEDIS_ASSERT(res->score == key[i]);
+    SOUPEN_ASSERT(res != nullptr);
+    SOUPEN_ASSERT(res->score == key[i]);
   }
   //rank
   for (i = 0; i < N; i++) {
@@ -103,7 +103,7 @@ void test_treap_correct()
       realrank += key[j] < key[i];
     }
     int r = p->get_rank(str[i], key[i]);
-    YEDIS_ASSERT(realrank == r);
+    SOUPEN_ASSERT(realrank == r);
   }
   p->~SoupenTreap();
   soupen_free(p, sizeof(SoupenTreap));
@@ -124,29 +124,29 @@ void test_treap_correct2()
   for (i = 0; i < 3 * N + 5; i++) {
     sprintf(c, "%d", i);
     int ret = SoupenString::factory(c, str[i]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = str[i]->init(c);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = p->insert(str[i], key[i % N]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
   }
   //size
   int size = p->size();
-  YEDIS_ASSERT(size == 3 * N + 5);
+  SOUPEN_ASSERT(size == 3 * N + 5);
   //min max
   SoupenTreapNode *pmin = p->find_min();
-  YEDIS_ASSERT(pmin != nullptr);
-  YEDIS_ASSERT(pmin->score == 1);
-  YEDIS_ASSERT(strcmp(pmin->ele->get_ptr(), "4") == 0);
+  SOUPEN_ASSERT(pmin != nullptr);
+  SOUPEN_ASSERT(pmin->score == 1);
+  SOUPEN_ASSERT(strcmp(pmin->ele->get_ptr(), "4") == 0);
   SoupenTreapNode *pmax = p->find_max();
-  YEDIS_ASSERT(pmax != nullptr);
-  YEDIS_ASSERT(pmax->score == 10);
-  YEDIS_ASSERT(strcmp(pmax->ele->get_ptr(), "12") == 0);
+  SOUPEN_ASSERT(pmax != nullptr);
+  SOUPEN_ASSERT(pmax->score == 10);
+  SOUPEN_ASSERT(strcmp(pmax->ele->get_ptr(), "12") == 0);
   //find
   for (i = 0; i < 3 * N + 5; i++) {
     SoupenTreapNode *res = p->find(str[i], key[i % N]);
-    YEDIS_ASSERT(res != nullptr);
-    YEDIS_ASSERT(res->score == key[i % N]);
+    SOUPEN_ASSERT(res != nullptr);
+    SOUPEN_ASSERT(res->score == key[i % N]);
   }
   p->~SoupenTreap();
   soupen_free(p, sizeof(SoupenTreap));
@@ -166,11 +166,11 @@ void test_treap_correct3(int ele_to_delete)
   for (i = 0; i < N; i++) {
     sprintf(c, "%d", i);
     int ret = SoupenString::factory(c, str[i]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = str[i]->init(c);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
     ret = p->insert(str[i], key[i]);
-    YEDIS_ASSERT(ret == 0);
+    SOUPEN_ASSERT(ret == 0);
   }
   for (i = 0; i < N; i++) {
     rank[i] = p->get_rank(str[i], key[i]);
@@ -183,21 +183,21 @@ void test_treap_correct3(int ele_to_delete)
   }
   //del
   int ret = p->remove(str[i], key[i]);
-  YEDIS_ASSERT(ret == 0);
+  SOUPEN_ASSERT(ret == 0);
   for (int j = 0; j < N; ++j) {
     if (j != i) {
-      YEDIS_ASSERT(p->find(str[j], key[j]) != nullptr);
+      SOUPEN_ASSERT(p->find(str[j], key[j]) != nullptr);
     }
   }
   SoupenTreapNode *res = p->find(str[i], key[i]);
-  YEDIS_ASSERT(res == nullptr);
+  SOUPEN_ASSERT(res == nullptr);
   for (int j = 0; j < N; ++j) {
     if (key[j] < ele_to_delete) {
-      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == rank[j]);
+      SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == rank[j]);
     } else if (key[j] == ele_to_delete) {
-      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == 0);
+      SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == 0);
     } else {
-      YEDIS_ASSERT(p->get_rank(str[j], key[j]) == rank[j] - 1);
+      SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == rank[j] - 1);
     }
   }
   p->~SoupenTreap();

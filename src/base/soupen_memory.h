@@ -1,5 +1,5 @@
-#ifndef YEDIS_MEMORY_H_
-#define YEDIS_MEMORY_H_
+#ifndef SOUPEN_MEMORY_H_
+#define SOUPEN_MEMORY_H_
 #include "../base/soupen_common.h"
 #include "../server/soupen_info_manager.h"
 //memory allocation
@@ -21,7 +21,7 @@
 template<typename T>
 void soupen_reclaim(T *&p)
 {
-  if (YEDIS_LIKELY(nullptr != p)) {
+  if (SOUPEN_LIKELY(nullptr != p)) {
     p->~T();
     soupen_free(p, sizeof(T));
     p = nullptr;
@@ -33,4 +33,4 @@ void soupen_reclaim(T *&p)
 #define MEMCPY(dest, source, size) memcpy(dest, source, size)
 #define MEMCMP(dest, source, size) memcmp(dest, source, size)
 
-#endif /* YEDIS_MEMORY_H_ */
+#endif /* SOUPEN_MEMORY_H_ */

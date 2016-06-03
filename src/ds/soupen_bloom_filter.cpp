@@ -11,17 +11,17 @@ namespace soupen_datastructures
   }
   int SoupenBloomFilter::init(int64_t n, int64_t m)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     data_ = nullptr;
     k = 0;
     size_in_byte_ = 0;
     if (n <= 0 || m <= 0 || m > n) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+      ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       int64_t size = n / 8 * 8 + 8;
       uint64_t *tmp = static_cast<uint64_t *>(soupen_malloc(size));
-      if (YEDIS_UNLIKELY(nullptr == tmp)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
+      if (SOUPEN_UNLIKELY(nullptr == tmp)) {
+        ret = SOUPEN_ERROR_NO_MEMORY;
       } else {
         MEMSET(tmp, 0, size);
         data_ = tmp;

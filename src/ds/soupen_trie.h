@@ -1,5 +1,5 @@
-#ifndef YEDIS_TRIE_H_
-#define YEDIS_TRIE_H_
+#ifndef SOUPEN_TRIE_H_
+#define SOUPEN_TRIE_H_
 #include "../base/soupen_memory.h"
 #include <ctype.h>
 namespace soupen_datastructures
@@ -8,12 +8,12 @@ namespace soupen_datastructures
   {
     int init(bool is_case_sensitive)
     {
-      int ret = YEDIS_SUCCESS;
+      int ret = SOUPEN_SUCCESS;
       is_inited_ = false;
       int64_t size = is_case_sensitive ? 10 + 26 + 26 + 1 : 10 + 26 + 1;
       next_ = (SoupenTrieNode **)soupen_malloc(sizeof(SoupenTrieNode*) * size);
-      if (YEDIS_UNLIKELY(nullptr == next_)) {
-        ret = YEDIS_ERROR_NO_MEMORY;
+      if (SOUPEN_UNLIKELY(nullptr == next_)) {
+        ret = SOUPEN_ERROR_NO_MEMORY;
       } else {
         for (int64_t i = 0; i < size; i++) {
           next_[i] = nullptr;
@@ -43,13 +43,13 @@ namespace soupen_datastructures
   public:
     SoupenTrie(bool is_case_sensitive) { init(is_case_sensitive);}
     ~SoupenTrie();
-    YEDIS_MUST_INLINE int add(const char *p);
-    YEDIS_MUST_INLINE int add(const char *p, const char *q);
-    YEDIS_MUST_INLINE int add(const char *p, const T *ele);
+    SOUPEN_MUST_INLINE int add(const char *p);
+    SOUPEN_MUST_INLINE int add(const char *p, const char *q);
+    SOUPEN_MUST_INLINE int add(const char *p, const T *ele);
     int add(const char *p, const char *q, const T *ele);
-    YEDIS_MUST_INLINE bool contains(const char *p);
-    YEDIS_MUST_INLINE bool contains(const char *p, const char *q);
-    YEDIS_MUST_INLINE bool contains(const char *p, T* &ele);
+    SOUPEN_MUST_INLINE bool contains(const char *p);
+    SOUPEN_MUST_INLINE bool contains(const char *p, const char *q);
+    SOUPEN_MUST_INLINE bool contains(const char *p, T* &ele);
     bool contains(const char *p, const char *q, T* &ele);
     int init(bool is_case_sensitive);
     bool is_inited() {return is_inited_;}
@@ -86,11 +86,11 @@ namespace soupen_datastructures
   template<typename T>
   int SoupenTrie<T>::add(const char *p)
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited())) {
-      ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(nullptr == p)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited())) {
+      ret = SOUPEN_ERROR_NOT_INITED;
+    } else if (SOUPEN_UNLIKELY(nullptr == p)) {
+      ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       ret = add(p, p + strlen(p), nullptr);
     }
@@ -100,11 +100,11 @@ namespace soupen_datastructures
   template<typename T>
   int SoupenTrie<T>::add(const char *p, const char *q)
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited())) {
-      ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(nullptr == p || nullptr == q)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited())) {
+      ret = SOUPEN_ERROR_NOT_INITED;
+    } else if (SOUPEN_UNLIKELY(nullptr == p || nullptr == q)) {
+      ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       ret = add(p, q, nullptr);
     }
@@ -114,11 +114,11 @@ namespace soupen_datastructures
   template<typename T>
   int SoupenTrie<T>::add(const char *p, const T *ele)
   {
-    int ret = YEDIS_SUCCESS;
-    if (YEDIS_UNLIKELY(!is_inited())) {
-      ret = YEDIS_ERROR_NOT_INITED;
-    } else if (YEDIS_UNLIKELY(nullptr == p)) {
-      ret = YEDIS_ERROR_INVALID_ARGUMENT;
+    int ret = SOUPEN_SUCCESS;
+    if (SOUPEN_UNLIKELY(!is_inited())) {
+      ret = SOUPEN_ERROR_NOT_INITED;
+    } else if (SOUPEN_UNLIKELY(nullptr == p)) {
+      ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       ret = add(p, p + strlen(p), ele);
     }
@@ -126,22 +126,22 @@ namespace soupen_datastructures
   }
 
   template<typename T>
-  YEDIS_MUST_INLINE int SoupenTrie<T>::add(const char *p, const char *q, const T *ele)
+  SOUPEN_MUST_INLINE int SoupenTrie<T>::add(const char *p, const char *q, const T *ele)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     const char *r = p;
     T *tmp = root_;
     int id = 0;
     while(r < q) {
       if (!is_valid_char(*r, id)) {
-        ret = YEDIS_ERROR_INVALID_ARGUMENT;
+        ret = SOUPEN_ERROR_INVALID_ARGUMENT;
         break;
       } else if (nullptr == tmp->next_[id]) {
         T *buffer = static_cast<T*>(soupen_malloc(sizeof(T)));
-        if (YEDIS_UNLIKELY(nullptr == buffer)) {
-          ret = YEDIS_ERROR_NO_MEMORY;
+        if (SOUPEN_UNLIKELY(nullptr == buffer)) {
+          ret = SOUPEN_ERROR_NO_MEMORY;
           break;
-        } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
+        } else if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
           soupen_reclaim(buffer);
         } else {
           tmp->next_[id] = buffer;
@@ -150,7 +150,7 @@ namespace soupen_datastructures
       tmp = tmp->next_[id];
       r++;
     } //end while
-    if (YEDIS_SUCCED && r >= q) {
+    if (SOUPEN_SUCCED && r >= q) {
       if(ele != nullptr) {
         *tmp = *ele;
       }
@@ -162,14 +162,14 @@ namespace soupen_datastructures
   template<typename T>
   int SoupenTrie<T>::init(bool is_case_sensitive)
   {
-    int ret = YEDIS_SUCCESS;
+    int ret = SOUPEN_SUCCESS;
     root_ = nullptr;
     is_inited_ = false;
     is_case_sensitive_ = is_case_sensitive;
     T *buffer = static_cast<T*>(soupen_malloc(sizeof(T)));
-    if (YEDIS_UNLIKELY(nullptr == buffer)) {
-      ret = YEDIS_ERROR_NO_MEMORY;
-    } else if (YEDIS_UNLIKELY(YEDIS_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
+    if (SOUPEN_UNLIKELY(nullptr == buffer)) {
+      ret = SOUPEN_ERROR_NO_MEMORY;
+    } else if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = buffer->init(is_case_sensitive_)))) {
       soupen_reclaim(buffer);
     } else {
       root_ = buffer;
@@ -204,30 +204,30 @@ namespace soupen_datastructures
   }
 
   template<typename T>
-  YEDIS_MUST_INLINE bool SoupenTrie<T>::contains(const char *p)
+  SOUPEN_MUST_INLINE bool SoupenTrie<T>::contains(const char *p)
   {
     bool ret = false;
-    if (YEDIS_LIKELY(nullptr != p)) {
+    if (SOUPEN_LIKELY(nullptr != p)) {
       T *tmp = nullptr;
       const char *q = p + strlen(p);
       ret = contains(p, q, tmp);
     }
   }
   template<typename T>
-  YEDIS_MUST_INLINE bool SoupenTrie<T>::contains(const char *p, const char *q)
+  SOUPEN_MUST_INLINE bool SoupenTrie<T>::contains(const char *p, const char *q)
   {
     bool ret = false;
-    if (YEDIS_LIKELY(nullptr != p && nullptr != q)) {
+    if (SOUPEN_LIKELY(nullptr != p && nullptr != q)) {
       T *tmp = nullptr;
       ret = contains(p, q, tmp);
     }
     return ret;
   }
   template<typename T>
-  YEDIS_MUST_INLINE bool SoupenTrie<T>::contains(const char *p, T* &ele)
+  SOUPEN_MUST_INLINE bool SoupenTrie<T>::contains(const char *p, T* &ele)
   {
     bool ret = false;
-    if (YEDIS_LIKELY(nullptr != p)) {
+    if (SOUPEN_LIKELY(nullptr != p)) {
       const char *q = p + strlen(p);
       ret = contains(p, q, ele);
     }
@@ -241,7 +241,7 @@ namespace soupen_datastructures
     int id = 0;
     const char *r = p;
     while(r < q && nullptr != tmp) {
-      if (YEDIS_UNLIKELY(!is_valid_char(*r, id))) {
+      if (SOUPEN_UNLIKELY(!is_valid_char(*r, id))) {
         ret = false;
         break;
       } else if (nullptr == tmp->next_[id]) {
@@ -261,4 +261,4 @@ namespace soupen_datastructures
   }
 }
 
-#endif /* YEDIS_TRIE_H_ */
+#endif /* SOUPEN_TRIE_H_ */

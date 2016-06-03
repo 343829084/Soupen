@@ -1,5 +1,5 @@
-#ifndef YEDIS_PETERSON_SPIN_LOCK_H_
-#define YEDIS_PETERSON_SPIN_LOCK_H_
+#ifndef SOUPEN_PETERSON_SPIN_LOCK_H_
+#define SOUPEN_PETERSON_SPIN_LOCK_H_
 #include "../base/soupen_common.h"
 namespace soupen_sync
 {
