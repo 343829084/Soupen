@@ -6,7 +6,7 @@ namespace soupen_lib
   class SoupenRandomGenerator
   {
   public:
-    SoupenRandomGenerator(int32_t init_state = 1);
+    int init(int32_t init_state = 1);
     int32_t random();
     int operator() ();
   private:

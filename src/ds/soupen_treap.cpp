@@ -50,8 +50,9 @@ namespace soupen_datastructures
       sentinel_ = tmp;
       root_ = sentinel_;//important !
       size_ = 0;//sentinel does not count.
+      ret = random_.init();
     }
-    return 0;
+    return ret;
   }
 
   int SoupenTreap::insert(const char *str, const double score)
