@@ -8,7 +8,7 @@ namespace soupen_lib
   public:
     int init(int32_t init_state = 1);
     int32_t random();
-    int operator() ();
+    int32_t operator() ();
   private:
     int32_t state_;
     static const int32_t A = 48271;

@@ -10,14 +10,10 @@ namespace soupen_lib
   int32_t SoupenRandomGenerator::random()
   {
     int32_t tmp = A * (state_ % Q) - R * (state_ / Q);
-    if (tmp >= 0) {
-      state_ = tmp;
-    } else {
-      state_ = tmp + M;
-    }
+    state_ = tmp >= 0 ? tmp : tmp + M;
     return state_;
   }
-  int SoupenRandomGenerator::operator() ()
+  int32_t SoupenRandomGenerator::operator() ()
   {
     return random();
   }
