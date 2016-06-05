@@ -1,4 +1,5 @@
 #include "../ds/soupen_treap.h"
+using namespace soupen_lib;
 namespace soupen_datastructures
 {
   #define INSERT(subtree1, substree2) \
@@ -90,7 +91,7 @@ namespace soupen_datastructures
         treap->size = 1;
         treap->score = score;
         treap->left = treap->right = sentinel_;
-        treap->priority = static_cast<uint64_t>(random());
+        treap->priority = static_cast<uint64_t>(random_());
       }
     } else if(treap->score > score) {
       INSERT(left, right);

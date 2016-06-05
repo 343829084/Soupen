@@ -1,6 +1,7 @@
 #ifndef SOUPEN_TREAP_H_
 #define SOUPEN_TREAP_H_
 #include "../ds/soupen_string.h"
+#include "../lib/soupen_math.h"
 namespace soupen_datastructures
 {
   struct SoupenTreapNode
@@ -49,6 +50,7 @@ namespace soupen_datastructures
     SoupenTreapNode *right_rotation(SoupenTreapNode *k1, SoupenTreapNode *k2);
     SOUPEN_MUST_INLINE static int size(SoupenTreapNode *p) {return p->size;}
   private:
+    soupen_lib::SoupenRandomGenerator random_;
     SoupenTreapNode *root_;
     SoupenTreapNode *sentinel_;
     int64_t size_;
