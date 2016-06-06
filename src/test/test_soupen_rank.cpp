@@ -189,13 +189,18 @@ void test_treap_correct3(int ele_to_delete)
       SOUPEN_ASSERT(p->find(str[j], key[j]) != nullptr);
     }
   }
-  SoupenTreapNode *res = p->find(str[i], key[i]);
+  SoupenString *tmp = nullptr;
+  sprintf(c, "%d", i);
+  ret = SoupenString::factory(c, tmp);
+  SOUPEN_ASSERT(ret == 0);
+  ret = tmp->init(c);
+  SOUPEN_ASSERT(ret == 0);
+  SoupenTreapNode *res = p->find(tmp, key[i]);
   SOUPEN_ASSERT(res == nullptr);
   for (int j = 0; j < N; ++j) {
     if (key[j] < ele_to_delete) {
       SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == rank[j]);
     } else if (key[j] == ele_to_delete) {
-      SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == 0);
     } else {
       SOUPEN_ASSERT(p->get_rank(str[j], key[j]) == rank[j] - 1);
     }

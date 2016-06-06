@@ -206,7 +206,7 @@ namespace soupen_datastructures
       } else /*if (cmp == 0)*/ {
         ret = SOUPEN_SUCCESS;
         if (treap->left == sentinel_ && treap->right == sentinel_) {
-          soupen_reclaim(treap);
+          help_reclaim(treap);
         } else if (treap->left->priority > treap->right->priority) {
           treap = right_rotation(treap, treap->left);
           ret = remove(str, score, treap->right);
@@ -253,5 +253,12 @@ namespace soupen_datastructures
       }
     }
     return tmp;
+  }
+
+  void SoupenTreap::help_reclaim(SoupenTreapNode *&p)
+  {
+    p->~SoupenTreapNode();
+    soupen_free(p, sizeof(SoupenTreapNode));
+    p = sentinel_;
   }
 }

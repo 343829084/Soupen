@@ -49,6 +49,7 @@ namespace soupen_datastructures
     SoupenTreapNode *left_rotation(SoupenTreapNode *k1, SoupenTreapNode *k2);
     SoupenTreapNode *right_rotation(SoupenTreapNode *k1, SoupenTreapNode *k2);
     SOUPEN_MUST_INLINE static int size(SoupenTreapNode *p) {return p->size;}
+    void help_reclaim(SoupenTreapNode *&p);
   private:
     soupen_lib::SoupenRandomGenerator random_;
     SoupenTreapNode *root_;
