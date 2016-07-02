@@ -1,6 +1,7 @@
 #ifndef SOUPEN_ORDER_H_
 #define SOUPEN_ORDER_H_
 #include "../server/soupen_db.h"
+#include<iostream>
 #define LEFT_SPILT '('
 #define RIGHT_SPILT ')'
 #define MAX_PARAM_NUMS 16
@@ -82,9 +83,10 @@ namespace soupen_server
   template<typename T>
   void reclaim_soupen_ds_type_node(SoupenDSTypeNode<T> *p)
   {
+    int64_t sizeof_string = p->key->get_object_size();
     p->~SoupenDSTypeNode<T>();
     soupen_free(p->val, sizeof(T));
-    soupen_free(p->key, sizeof(SoupenString));
+    soupen_free(p->key, sizeof_string);
     soupen_free(p, sizeof(SoupenDSTypeNode<T>));
   }
 
@@ -97,6 +99,8 @@ namespace soupen_server
     out = ydbe[SoupenServerInfoManager::get_db_id()].member_field; \
     bool is_found = false; \
     while(nullptr != out) { \
+      std::cout<<"xxxxxxxxx"<<key<<","<<key_length<<std::endl;\
+      std::cout<<"xxxxxxxxx"<<out->key->get_ptr()<<","<<out->key->length()<<std::endl;\
       if(out->key->is_equal(key, key_length)) { \
         is_found = true; \
         break; \
@@ -109,9 +113,10 @@ namespace soupen_server
   SoupenBloomFilterDSNode *bfnode = nullptr;\
   SoupenBloomFilter *bf = nullptr;\
   SoupenString *string = nullptr;\
-  string = static_cast<SoupenString*>(soupen_malloc(sizeof(SoupenString)));\
-  if (SOUPEN_UNLIKELY(nullptr == string)) {\
-    ret = SOUPEN_ERROR_NO_MEMORY;\
+  ret = SoupenString::factory(params[0], param_lens[0], string);\
+  if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != ret)) {\
+  } else if (SOUPEN_UNLIKELY(nullptr == string)) {\
+    ret = SOUPEN_ERROR_UNEXPECTED;\
   } else if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
   } else {\
     bf = static_cast<SoupenBloomFilter*>(soupen_malloc(sizeof(SoupenBloomFilter)));\
@@ -136,9 +141,10 @@ namespace soupen_server
   SoupenTrieDSNode *trienode = nullptr;\
   SoupenTrie<SoupenTrieNode> *trie = nullptr;\
   SoupenString *string = nullptr;\
-  string = static_cast<SoupenString*>(soupen_malloc(sizeof(SoupenString)));\
-  if (SOUPEN_UNLIKELY(nullptr == string)) {\
-    ret = SOUPEN_ERROR_NO_MEMORY;\
+  ret = SoupenString::factory(params[0], param_lens[0], string);\
+  if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != ret)) {\
+  } else if (SOUPEN_UNLIKELY(nullptr == string)) {\
+    ret = SOUPEN_ERROR_UNEXPECTED;\
   } else if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = string->init(params[0], param_lens[0])))) { \
   } else {\
     trie = static_cast<SoupenTrie<SoupenTrieNode>*>(soupen_malloc(sizeof(SoupenTrie<SoupenTrieNode>)));\

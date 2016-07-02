@@ -66,10 +66,8 @@ namespace soupen_server
     } else if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_, &event) == -1) {
       ret = SOUPEN_ERROR_UNEXPECTED;
     } else {
-
       struct epoll_event events[EPOLL_MAXEVENTS];
       memset(events, 0, sizeof(events));
-
       int conn_sock;
       struct sockaddr_in client_addr;
       socklen_t client_addr_len;
@@ -79,88 +77,62 @@ namespace soupen_server
       char buffer[BUFF_SIZE];
       int recv_size;
       while (1) {
-
         res = epoll_wait(epfd, events, EPOLL_MAXEVENTS, EPOLL_TIMEOUT);
         if (res < 0) {
-          perror("epoll_wait failed");
+          Soupen_LOG("epoll_wait error", P(res), P(stderr));
           exit(EXIT_FAILURE);
         } else if (res == 0) {
-          fprintf(stderr, "memory used right now: %lld Bytes\n",
-              SoupenServerInfoManager::get_total_memory_used());
-          Soupen_LOG("memory used right now", P(SoupenServerInfoManager::get_total_memory_used()));
+          fprintf(stderr, "memory used right now: %lld Bytes\n", SoupenServerInfoManager::get_total_memory_used());
           continue;
         }
-
-
+        //res > 0
         for (i = 0; i < res; i++) {
-
-
-          if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)
-              || (!(events[i].events & EPOLLIN))) {
-
-            fprintf(stderr, "epoll error\n");
+          if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) {
+            Soupen_LOG("epoll error", P(events[i].events), P(stderr));
             close(events[i].data.fd);
             continue;
           }
 
-
-          if (events[i].data.fd == sock_) {
-
-
+          if (events[i].data.fd == sock_) { //new connection
             while (1) {
               client_addr_len = sizeof(client_addr);
-              conn_sock = accept(sock_, (struct sockaddr *) &client_addr,
-                  &client_addr_len);
+              conn_sock = accept(sock_, (struct sockaddr *) &client_addr, &client_addr_len);
               if (conn_sock == -1) {
                 if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-
                   break;
                 } else {
-                  perror("accept failed");
+                  Soupen_LOG("accept failed", P(errno));
                   exit(EXIT_FAILURE);
                 }
               }
-              if (!inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip_str,
-                  sizeof(client_ip_str))) {
-                perror("inet_ntop failed");
+              if (!inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip_str, sizeof(client_ip_str))) {
+                Soupen_LOG("inet_ntop failed", P(errno));
                 exit(EXIT_FAILURE);
               }
               printf("accept a client from: %s\n", client_ip_str);
-
               set_socket_nonblocking(conn_sock);
-
               event.events = EPOLLIN;
               event.data.fd = conn_sock;
               if (epoll_ctl(epfd, EPOLL_CTL_ADD, conn_sock, &event) == -1) {
-                perror("epoll_ctl(EPOLL_CTL_ADD) failed");
+                Soupen_LOG("epoll adds event failed", P(errno));
                 exit(EXIT_FAILURE);
               }
             }
-
           } else {
-
-
             conn_sock = events[i].data.fd;
             memset(buffer, 0, sizeof(buffer));
-            if ((recv_size = recv(conn_sock, buffer, sizeof(buffer), 0)) == -1
-                && (errno != EAGAIN)) {
-
-              perror("recv failed");
+            if ((recv_size = recv(conn_sock, buffer, sizeof(buffer), 0)) == -1 && (errno != EAGAIN)) {
+              Soupen_LOG("recv data failed", P(errno));
               exit(EXIT_FAILURE);
+            } else if (recv_size == 0) {
+              continue;
             }
-
             memset(response, 0, sizeof(response));
-
             parser_text(buffer, response);
-
-
-            if (send(conn_sock, response, strlen(response), 0) == -1 && (errno != EAGAIN)
-                && (errno != EWOULDBLOCK)) {
+            if (send(conn_sock, response, strlen(response), 0) == -1 && (errno != EAGAIN) && (errno != EWOULDBLOCK)) {
               perror("send failed");
               exit(EXIT_FAILURE);
             }
-
-
           }
         }
       }

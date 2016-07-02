@@ -1,4 +1,5 @@
 #include "../ds/soupen_string.h"
+#include <iostream>
 namespace soupen_datastructures
 {
   int SoupenString::init(char *str, int64_t len)
@@ -42,7 +43,7 @@ namespace soupen_datastructures
   SoupenString::~SoupenString()
   {
     if (len_ >= CHAR_LEN_THRESHOLD && data_ != nullptr) {
-      soupen_free(data_, len_);
+      soupen_free(data_, len_ + 1);// + 1 for '\0'
     }
     data_ = nullptr;
     len_ = -1;
@@ -54,6 +55,19 @@ namespace soupen_datastructures
     yn_str = nullptr;
     SoupenString *tmp = nullptr;
     if (SOUPEN_UNLIKELY(nullptr == p || (len = strlen(p)) <= 0)) {
+      ret = SOUPEN_ERROR_INVALID_ARGUMENT;
+    } else {
+      ret = factory(p, len, yn_str);
+    }
+    return ret;
+  }
+
+  int SoupenString::factory(const char *p, int64_t len, SoupenString* &yn_str)
+  {
+    int ret = SOUPEN_SUCCESS;
+    yn_str = nullptr;
+    SoupenString *tmp = nullptr;
+    if (SOUPEN_UNLIKELY(nullptr == p)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else if (SOUPEN_LIKELY(len < CHAR_LEN_THRESHOLD)) {
       tmp = static_cast<SoupenString*>(soupen_malloc(sizeof(SoupenString) + len + 1));

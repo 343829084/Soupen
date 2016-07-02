@@ -79,9 +79,11 @@ namespace soupen_lib
   #define GET_LOG_FUN_NAME(_0, _1, _2, _3, _4, _5, _6, _7, FUNC, ...) FUNC
 
   #define Soupen_LOG(...) \
+  do{\
     std::fstream &os = SoupenLogV2::get_logger().get_os();\
     const char *dt_fmt = "%Y-%m-%d %H:%M:%S";\
     char *datetime = soupen_lib::SoupenTime::get_curr_datetime(dt_fmt);\
-    GET_LOG_FUN_NAME(_0, ##__VA_ARGS__, soupen_log7, soupen_log6, soupen_log5, soupen_log4, soupen_log3, soupen_log2, soupen_log1, soupen_log0)(__VA_ARGS__)
+    GET_LOG_FUN_NAME(_0, ##__VA_ARGS__, soupen_log7, soupen_log6, soupen_log5, soupen_log4, soupen_log3, soupen_log2, soupen_log1, soupen_log0)(__VA_ARGS__)\
+  }while(0);
 }
 #endif /*SOUPEN_LOG_V2_H_*/

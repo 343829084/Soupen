@@ -5,7 +5,7 @@
 //memory allocation
 
 #define soupen_malloc(size) ({ \
-  int64_t tmp = size;  \
+  int64_t tmp = size;\
   void *p = malloc(tmp); \
   soupen_server::SoupenServerInfoManager::update_total_memory_used(tmp);\
   p;})

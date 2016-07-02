@@ -13,25 +13,31 @@ namespace soupen_datastructures
     {
       return data_;
     }
+    //is equal
     SOUPEN_MUST_INLINE bool is_equal(const char *p) const
     {
-      return !strcmp(p, data_);
+      return 0 == cmp(p);
     }
     SOUPEN_MUST_INLINE bool is_equal(const char *p, int64_t len) const
     {
-      return !strncmp(p, data_, len < len_ ? len : len_);
+      return 0 == cmp(p, len);
     }
     SOUPEN_MUST_INLINE bool is_equal(const SoupenString *other) const
     {
-      return !strncmp(other->data_, data_, this->length() < other->length() ? this->length() : other->length());
+      return 0 == cmp(other->get_ptr(), other->length());
     }
+    //cmp
     SOUPEN_MUST_INLINE int cmp(const char *p) const
     {
       return strcmp(p, data_);
     }
+    SOUPEN_MUST_INLINE int cmp(const char *p, int64_t len) const
+    {
+      return MEMCMP(data_, p, this->length() < len ? this->length() : len);
+    }
     SOUPEN_MUST_INLINE int cmp(const SoupenString *other) const
     {
-      return strcmp(other->data_, data_);
+      return cmp(other->get_ptr(), other->length());
     }
     SOUPEN_MUST_INLINE int64_t get_object_size() const
     {
@@ -46,6 +52,7 @@ namespace soupen_datastructures
       return data_ == nullptr || len_ == 0;
     }
     static int factory(const char *p, SoupenString* &yn_str);
+    static int factory(const char *p, int64_t len, SoupenString* &yn_str);
   private:
     static const int64_t CHAR_LEN_THRESHOLD = 48;
     int64_t len_;
