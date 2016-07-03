@@ -1,7 +1,6 @@
 #ifndef SOUPEN_ORDER_H_
 #define SOUPEN_ORDER_H_
 #include "../server/soupen_db.h"
-#include<iostream>
 #define LEFT_SPILT '('
 #define RIGHT_SPILT ')'
 #define MAX_PARAM_NUMS 16
@@ -99,8 +98,6 @@ namespace soupen_server
     out = ydbe[SoupenServerInfoManager::get_db_id()].member_field; \
     bool is_found = false; \
     while(nullptr != out) { \
-      std::cout<<"xxxxxxxxx"<<key<<","<<key_length<<std::endl;\
-      std::cout<<"xxxxxxxxx"<<out->key->get_ptr()<<","<<out->key->length()<<std::endl;\
       if(out->key->is_equal(key, key_length)) { \
         is_found = true; \
         break; \

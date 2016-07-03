@@ -1,5 +1,4 @@
 #include "../ds/soupen_string.h"
-#include <iostream>
 namespace soupen_datastructures
 {
   int SoupenString::init(char *str, int64_t len)
