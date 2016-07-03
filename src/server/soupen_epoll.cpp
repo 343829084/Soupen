@@ -79,8 +79,8 @@ namespace soupen_server
       while (1) {
         res = epoll_wait(epfd, events, EPOLL_MAXEVENTS, EPOLL_TIMEOUT);
         if (res < 0) {
-          Soupen_LOG("epoll_wait error", P(res), P(stderr));
-          exit(EXIT_FAILURE);
+          Soupen_LOG("epoll_wait error", P(res), P(errno));
+          continue;
         } else if (res == 0) {
           fprintf(stderr, "memory used right now: %lld Bytes\n", SoupenServerInfoManager::get_total_memory_used());
           continue;
@@ -88,8 +88,13 @@ namespace soupen_server
         //res > 0
         for (i = 0; i < res; i++) {
           if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) {
-            Soupen_LOG("epoll error", P(events[i].events), P(stderr));
             close(events[i].data.fd);
+            event.events = EPOLLIN;
+            event.data.fd = events[i].data.fd;
+            if (epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &event) == -1) {
+              Soupen_LOG("epoll_ctl failed", P(errno));
+              continue;
+            }
             continue;
           }
 
@@ -102,20 +107,20 @@ namespace soupen_server
                   break;
                 } else {
                   Soupen_LOG("accept failed", P(errno));
-                  exit(EXIT_FAILURE);
+                  continue;
                 }
               }
               if (!inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip_str, sizeof(client_ip_str))) {
                 Soupen_LOG("inet_ntop failed", P(errno));
-                exit(EXIT_FAILURE);
+                continue;
               }
               printf("accept a client from: %s\n", client_ip_str);
               set_socket_nonblocking(conn_sock);
               event.events = EPOLLIN;
               event.data.fd = conn_sock;
               if (epoll_ctl(epfd, EPOLL_CTL_ADD, conn_sock, &event) == -1) {
-                Soupen_LOG("epoll adds event failed", P(errno));
-                exit(EXIT_FAILURE);
+                Soupen_LOG("epoll_ctl failed", P(errno));
+                continue;
               }
             }
           } else {
@@ -123,15 +128,21 @@ namespace soupen_server
             memset(buffer, 0, sizeof(buffer));
             if ((recv_size = recv(conn_sock, buffer, sizeof(buffer), 0)) == -1 && (errno != EAGAIN)) {
               Soupen_LOG("recv data failed", P(errno));
-              exit(EXIT_FAILURE);
+              continue;
             } else if (recv_size == 0) {
+              close(conn_sock);
+              event.events = EPOLLIN;
+              event.data.fd = conn_sock;
+              if (epoll_ctl(epfd, EPOLL_CTL_DEL, conn_sock, &event) == -1) {
+                Soupen_LOG("epoll_ctl failed", P(errno));
+              }
               continue;
             }
             memset(response, 0, sizeof(response));
             parser_text(buffer, response);
             if (send(conn_sock, response, strlen(response), 0) == -1 && (errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-              perror("send failed");
-              exit(EXIT_FAILURE);
+              Soupen_LOG("send data failed", P(errno));
+              continue;
             }
           }
         }
