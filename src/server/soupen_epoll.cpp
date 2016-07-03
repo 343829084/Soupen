@@ -88,13 +88,13 @@ namespace soupen_server
         //res > 0
         for (i = 0; i < res; i++) {
           if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) {
-            close(events[i].data.fd);
             event.events = EPOLLIN;
             event.data.fd = events[i].data.fd;
             if (epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, &event) == -1) {
               Soupen_LOG("epoll_ctl failed", P(errno));
               continue;
             }
+            close(events[i].data.fd);
             continue;
           }
 
@@ -130,12 +130,12 @@ namespace soupen_server
               Soupen_LOG("recv data failed", P(errno));
               continue;
             } else if (recv_size == 0) {
-              close(conn_sock);
               event.events = EPOLLIN;
               event.data.fd = conn_sock;
               if (epoll_ctl(epfd, EPOLL_CTL_DEL, conn_sock, &event) == -1) {
                 Soupen_LOG("epoll_ctl failed", P(errno));
               }
+              close(conn_sock);
               continue;
             }
             memset(response, 0, sizeof(response));
