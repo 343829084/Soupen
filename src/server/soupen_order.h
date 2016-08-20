@@ -1,8 +1,8 @@
 #ifndef SOUPEN_ORDER_H_
 #define SOUPEN_ORDER_H_
 #include "../server/soupen_db.h"
-#define LEFT_SPILT '('
-#define RIGHT_SPILT ')'
+#define LEFT_SPILT '\r'
+#define RIGHT_SPILT '\n'
 #define MAX_PARAM_NUMS 16
 namespace soupen_server
 {

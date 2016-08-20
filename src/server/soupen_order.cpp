@@ -93,7 +93,7 @@ namespace soupen_server
     }
     return char2int(tmp, p);
   }
-  SOUPEN_MUST_INLINE int get_length_of_order(char *&p)
+  SOUPEN_MUST_INLINE int get_length(char *&p)
   {
     return static_cast<int>(get_int(p));
   }
@@ -107,7 +107,9 @@ namespace soupen_server
   }
   void set_params(char *&p, char **params, int *param_lens, int64_t param_num)
   {
+    //"$5\r\nhello\r\n$6\r\nsoupen\r\n"
     for (int64_t i = 0; i < param_num; i++) {
+      p++;//skip $
       char *tmp = p;
       while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
         p++;
@@ -128,10 +130,14 @@ namespace soupen_server
     if (SOUPEN_UNLIKELY(SoupenServerInfoManager::is_no_more_memory())) {
       ret = SOUPEN_ERROR_MEMORY_LIMITED;
     }
-    while(SOUPEN_SUCCESS == ret && *p != 'Y' && *(p+1) != 'E' && *(p+2) != 'D' && *(p+3) != 'I') {
+    //*3\r\n$3\r\nset\r\n$5\r\nhello\r\n$6\r\nsoupen\r\n
+    while(SOUPEN_SUCCESS == ret && *p != '\0') {
       if (*p == '*') {
         p++;//skip '*'
-        int length_of_order = get_length_of_order(p);
+        int num_of_content = get_length(p); //"set hello soupen" num_of_content=3
+        skip_split(p);
+        p++;//skip $
+        int length_of_order = get_length(p);//strlen(set) = 3
         skip_split(p);
         SoupenOrderRoutine routine = get_order_routine(p, p + length_of_order);
         if (routine == nullptr) {
@@ -141,11 +147,11 @@ namespace soupen_server
         }
         p += length_of_order;
         skip_split(p);
-        int num_of_parameters = get_param_nums(p);
+        int num_of_parameters = num_of_content - 1;
         if (num_of_parameters == 0) {
           ret = SOUPEN_ERROR_INVALID_ARGUMENT;
         } else if (num_of_parameters >= 1) {
-          skip_split(p);
+          //"$5\r\nhello\r\n$6\r\nsoupen\r\n"
           set_params(p, params, param_lens, num_of_parameters);
           routine(out_buffer, params, param_lens, num_of_parameters);
         }
@@ -174,9 +180,8 @@ namespace soupen_server
         }
       }
     }
-
     if (SOUPEN_SUCCESS == ret) {
-      strcpy(out_buffer, "+OK");
+      strcpy(out_buffer, "+OK\r\n");
     } else {
       strcpy(out_buffer, "-Operation failed");
     }
@@ -423,6 +428,7 @@ namespace soupen_server
   int init_order_funcs()
   {
     order_funcs[BFADD] = bfadd;
+    order_funcs[SET] = bfadd;
     order_funcs[BFCONTAINS] = bfcontains;
     order_funcs[BFCREATE] = bfcreate;
     order_funcs[BFDEL] = bfdel;

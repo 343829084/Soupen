@@ -125,7 +125,6 @@ namespace soupen_server
             }
           } else {
             conn_sock = events[i].data.fd;
-            memset(buffer, 0, sizeof(buffer));
             if ((recv_size = recv(conn_sock, buffer, sizeof(buffer), 0)) == -1 && (errno != EAGAIN)) {
               Soupen_LOG("recv data failed", P(errno));
               continue;
@@ -138,7 +137,6 @@ namespace soupen_server
               close(conn_sock);
               continue;
             }
-            memset(response, 0, sizeof(response));
             parser_text(buffer, response);
             if (send(conn_sock, response, strlen(response), 0) == -1 && (errno != EAGAIN) && (errno != EWOULDBLOCK)) {
               Soupen_LOG("send data failed", P(errno));
