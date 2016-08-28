@@ -34,6 +34,8 @@
 #define SOUPEN_SUCCED (SOUPEN_LIKELY(SOUPEN_SUCCESS == ret))
 #define SOUPEN_FAILED (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != ret))
 
+#define SOUPEN_FAIL(stmt) (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = (stmt))))
+
 //global config
 #define MAX_DB_NUM 16
 

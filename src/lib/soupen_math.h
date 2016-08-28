@@ -16,6 +16,12 @@ namespace soupen_lib
     static const int32_t Q = M / A;
     static const int32_t R = M % A;
   };
+  class SoupenCaster
+  {
+  public:
+    static int64_t char2int(char *start, char *end);
+    static int64_t int2char(char *buffer, int64_t value);
+  };
 }
 
 

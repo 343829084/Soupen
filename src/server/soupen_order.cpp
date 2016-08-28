@@ -1,11 +1,11 @@
 #include "../base/soupen_memory.h"
+#include "../lib/soupen_math.h"
 #include "../server/soupen_order.h"
 #include "../server/soupen_info_manager.h"
 #include "../ds/soupen_trie.h"
 #include "../ds/soupen_bloom_filter.h"
-#include <algorithm> //reverse
-using namespace std;
 using namespace soupen_datastructures;
+using namespace soupen_lib;
 namespace soupen_server
 {
   SoupenOrderRoutine order_funcs[MAX_TYPE] = {nullptr};
@@ -44,54 +44,14 @@ namespace soupen_server
       1,//"select"
       1//"flushdb"
   };
-  SOUPEN_MUST_INLINE int64_t char2int(char *start, char *end)
-  {
-    int64_t ret = 0;
-    char *tmp = start;
-    int sign = 1;
-    if (*start == '-') {
-      sign = -1;
-      ++tmp;
-    }
-    while(tmp != end) {
-      ret = ret * 10 + (*tmp - '0');
-      ++tmp;
-    }
-    return ret * sign;
-  }
-  SOUPEN_MUST_INLINE int64_t int2char(char *buffer, int64_t value)
-  {
-    static const char remainder_offset[2][19] = { { '9', '8', '7', '6', '5', '4', '3', '2', '1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' },//正数
 
-                                                { '9', '8', '7', '6', '5', '4', '3', '2', '1', '0', '9', '8', '7', '6', '5', '4', '3', '2', '1' } };//负数
-
-    static const bool quotient_offset[2][19] = { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },//正数
-
-                                               { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };//负数
-    char *p = buffer;
-    int64_t tmp = value;
-    int flag = value < 0;
-    const char *digit = remainder_offset[flag] + 9;
-    const bool *offset = quotient_offset[flag] + 9;
-    do {
-      int remainder = tmp % 10;
-      *p = digit[remainder];
-      tmp = tmp / 10 + offset[remainder];
-      ++p;
-    } while (tmp);
-    if(flag) {
-      *p++ = '-';
-    }
-    std::reverse(buffer, p);
-    return p - buffer;
-  }
   SOUPEN_MUST_INLINE int64_t get_int(char *&p)
   {
     char *tmp = p;
     while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
       p++;
     }
-    return char2int(tmp, p);
+    return SoupenCaster::char2int(tmp, p);
   }
   SOUPEN_MUST_INLINE int get_length(char *&p)
   {
@@ -114,14 +74,14 @@ namespace soupen_server
       while(*p != LEFT_SPILT && *(p+1) != RIGHT_SPILT) {
         p++;
       }
-      param_lens[i] = char2int(tmp, p);
+      param_lens[i] = SoupenCaster::char2int(tmp, p);
       skip_split(p);
       params[i] = p;
       p += param_lens[i];
       skip_split(p);
     }
   }
-  int parser_text(char *text, char *out_buffer)
+  int parse_cmd(char *text, SoupenClient *client)
   {
     int ret = SOUPEN_SUCCESS;
     char *p = text;
@@ -141,7 +101,7 @@ namespace soupen_server
         skip_split(p);
         SoupenOrderRoutine routine = get_order_routine(p, p + length_of_order);
         if (routine == nullptr) {
-          strcpy(out_buffer, "-Operation not supported");
+          client->output_buffer_->append("-Operation not supported");
           ret = SOUPEN_ERROR_NOT_SUPPORT;
           break;
         }
@@ -153,13 +113,13 @@ namespace soupen_server
         } else if (num_of_parameters >= 1) {
           //"$5\r\nhello\r\n$6\r\nsoupen\r\n"
           set_params(p, params, param_lens, num_of_parameters);
-          routine(out_buffer, params, param_lens, num_of_parameters);
+          routine(client, params, param_lens, num_of_parameters);
         }
       }
     }
     return ret;
   }
-  int bfadd(char *out_buffer,
+  int bfadd(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -181,13 +141,13 @@ namespace soupen_server
       }
     }
     if (SOUPEN_SUCCESS == ret) {
-      strcpy(out_buffer, "+OK\r\n");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
-  int bfcreate(char *out_buffer,
+  int bfcreate(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -196,8 +156,8 @@ namespace soupen_server
     if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[BFCREATE] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
-      int64_t n = char2int(params[1], params[1] + param_lens[1]);
-      int64_t m = char2int(params[2], params[2] + param_lens[2]);
+      int64_t n = SoupenCaster::char2int(params[1], params[1] + param_lens[1]);
+      int64_t m = SoupenCaster::char2int(params[2], params[2] + param_lens[2]);
       SoupenBloomFilterDSNode *tmp = nullptr;
       soupen_ds_node_find(params[0], param_lens[0], tmp);
       if (tmp != nullptr) {
@@ -220,13 +180,13 @@ namespace soupen_server
     }
 
     if (SOUPEN_SUCCED) {
-      strcpy(out_buffer, "+OK");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
-  int bfdel(char *out_buffer,
+  int bfdel(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -243,13 +203,13 @@ namespace soupen_server
     }
 
     if (SOUPEN_SUCCED) {
-      strcpy(out_buffer, "+OK");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
-  int bfcontains(char *out_buffer,
+  int bfcontains(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -267,16 +227,16 @@ namespace soupen_server
     }
 
     if (SOUPEN_FAILED) {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     } else if(is_found) {
-      strcpy(out_buffer, "+True");
+      client->output_buffer_->append("-TRUE");
     } else {
-      strcpy(out_buffer, "+False");
+      client->output_buffer_->append("-FALSE");
     }
     return ret;
   }
 
-  int tset(char *out_buffer,
+  int tset(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -287,7 +247,7 @@ namespace soupen_server
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenTrieDSNode *tmp = nullptr;
-      bool is_case_sensitive = static_cast<bool>(char2int(params[2], params[2] + param_lens[2]));
+      bool is_case_sensitive = static_cast<bool>(SoupenCaster::char2int(params[2], params[2] + param_lens[2]));
       soupen_ds_node_find(params[0], param_lens[0], tmp);
       if (tmp != nullptr) {
         tmp->val->add(params[1], params[1] + param_lens[1]);
@@ -301,13 +261,13 @@ namespace soupen_server
     }
 
     if (SOUPEN_SUCCED) {
-      strcpy(out_buffer, "+OK");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
-  int tcontains(char *out_buffer,
+  int tcontains(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -326,15 +286,15 @@ namespace soupen_server
     }
 
     if (SOUPEN_FAILED) {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("+OK\r\n");
     } else if(is_found) {
-      strcpy(out_buffer, "+True");
+      client->output_buffer_->append("-TRUE");
     } else {
-      strcpy(out_buffer, "+False");
+      client->output_buffer_->append("FALSE");
     }
     return ret;
   }
-  int tdel(char *out_buffer,
+  int tdel(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -352,14 +312,14 @@ namespace soupen_server
     }
 
     if (SOUPEN_SUCCED) {
-      strcpy(out_buffer, "+OK");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
 
-  int select(char *out_buffer,
+  int select(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums)
@@ -369,18 +329,18 @@ namespace soupen_server
     if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[SELECT] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
-      int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
+      int db_id = static_cast<int>(SoupenCaster::char2int(params[0], params[0] + param_lens[0]));
       ret = SoupenServerInfoManager::set_current_db_id(db_id);
     }
 
     if (SOUPEN_SUCCED) {
-      strcpy(out_buffer, "+OK");
+      client->output_buffer_->append("+OK\r\n");
     } else {
-      strcpy(out_buffer, "-Operation failed");
+      client->output_buffer_->append("-Operation failed");
     }
     return ret;
   }
-  int flushdb(char *out_buffer,
+  int flushdb(SoupenClient *client,
        char **params,
        int *param_lens,
        int param_nums)
@@ -390,7 +350,7 @@ namespace soupen_server
      if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[FLUSHDB] != param_nums)) {
        ret = SOUPEN_ERROR_INVALID_ARGUMENT;
      } else {
-       int db_id = static_cast<int>(char2int(params[0], params[0] + param_lens[0]));
+       int db_id = static_cast<int>(SoupenCaster::char2int(params[0], params[0] + param_lens[0]));
        if (SOUPEN_UNLIKELY(db_id < -1 || db_id >= MAX_DB_NUM)) {
          ret = SOUPEN_ERROR_INVALID_ARGUMENT;
        } else if (SOUPEN_UNLIKELY(db_id == -1)) {
@@ -401,9 +361,9 @@ namespace soupen_server
      }
 
      if (SOUPEN_SUCCED) {
-       strcpy(out_buffer, "+OK");
+       client->output_buffer_->append("+OK\r\n");
      } else {
-       strcpy(out_buffer, "-Operation failed");
+       client->output_buffer_->append("-Operation failed");
      }
      return ret;
    }

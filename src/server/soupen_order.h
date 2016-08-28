@@ -1,12 +1,13 @@
 #ifndef SOUPEN_ORDER_H_
 #define SOUPEN_ORDER_H_
 #include "../server/soupen_db.h"
+#include "../client/soupen_client.h"
 #define LEFT_SPILT '\r'
 #define RIGHT_SPILT '\n'
 #define MAX_PARAM_NUMS 16
 namespace soupen_server
 {
-
+  using soupen_client::SoupenClient;
   //define SoupenDataStructureNode
   typedef SoupenDSTypeNode<SoupenBloomFilter> SoupenBloomFilterDSNode;
   typedef SoupenDSTypeNode<SoupenTrie<SoupenTrieNode> > SoupenTrieDSNode;
@@ -41,7 +42,7 @@ namespace soupen_server
     MAX_TYPE = 15
   };
 
-  typedef int (*SoupenOrderRoutine)(char *out_buffer,
+  typedef int (*SoupenOrderRoutine)(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
@@ -73,7 +74,7 @@ namespace soupen_server
 
   int set_order_routine();
   int init_order_funcs();
-  int parser_text(char *text, char *out_buffer);
+  int parse_cmd(char *text, SoupenClient *client);
   SoupenOrderRoutine get_order_routine(char *order_name_start, char *order_name_end);
 
 
@@ -196,42 +197,42 @@ namespace soupen_server
 
 
   //standard bloom filter routine
-  int bfadd(char *out_buffer,
+  int bfadd(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int bfcontains(char *out_buffer,
+  int bfcontains(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int bfcreate(char *out_buffer,
+  int bfcreate(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int bfdel(char *out_buffer,
+  int bfdel(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
 
   //trie routine
-  int tset(char *out_buffer,
+  int tset(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int tcontains(char *out_buffer,
+  int tcontains(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int tdel(char *out_buffer,
+  int tdel(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
 
-  int select(char *out_buffer,
+  int select(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
-  int flushdb(char *out_buffer,
+  int flushdb(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);

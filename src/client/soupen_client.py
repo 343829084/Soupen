@@ -9,7 +9,6 @@ while 1:
        cmd=raw_input("Please input cmd:")
        text = cmd.split(' ')
        length = len(text)
-       print(length)
        send_text = '*'
        send_text = send_text + str(length)
        send_text = send_text + '\r'
