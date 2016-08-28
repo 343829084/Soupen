@@ -1,6 +1,6 @@
 #include "../base/soupen_memory.h"
 #include "../lib/soupen_math.h"
-#include "../server/soupen_order.h"
+#include "../server/soupen_cmd.h"
 #include "../server/soupen_info_manager.h"
 #include "../ds/soupen_trie.h"
 #include "../ds/soupen_bloom_filter.h"
@@ -8,9 +8,10 @@ using namespace soupen_datastructures;
 using namespace soupen_lib;
 namespace soupen_server
 {
-  SoupenOrderRoutine order_funcs[MAX_TYPE] = {nullptr};
-  SoupenTrie<SoupenOrderTrieNode> yt(false);
-  const char *ORDER_NAME[MAX_TYPE] = {
+  SoupenCmdRoutine cmd_funcs[MAX_TYPE] = {nullptr};
+  SoupenTrie<SoupenCmdTrieNode> yt(false);
+
+  const char *CMD_NAME[MAX_TYPE] = {
       "hget",
       "hset",
       "mset",
@@ -27,7 +28,7 @@ namespace soupen_server
       "select",
       "flushdb"
   };
-  const int ORDER_PARAM_NUM[MAX_TYPE] = {
+  const int CMD_PARAM_NUM[MAX_TYPE] = {
       2, //"hget",
       3,//"hset",
       3,//"mset",
@@ -97,15 +98,15 @@ namespace soupen_server
         int num_of_content = get_length(p); //"set hello soupen" num_of_content=3
         skip_split(p);
         p++;//skip $
-        int length_of_order = get_length(p);//strlen(set) = 3
+        int length_of_cmd = get_length(p);//strlen(set) = 3
         skip_split(p);
-        SoupenOrderRoutine routine = get_order_routine(p, p + length_of_order);
+        SoupenCmdRoutine routine = get_cmd_routine(p, p + length_of_cmd);
         if (routine == nullptr) {
           client->output_buffer_->append("-Operation not supported");
           ret = SOUPEN_ERROR_NOT_SUPPORT;
           break;
         }
-        p += length_of_order;
+        p += length_of_cmd;
         skip_split(p);
         int num_of_parameters = num_of_content - 1;
         if (num_of_parameters == 0) {
@@ -125,7 +126,7 @@ namespace soupen_server
       int param_nums)
   {
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[BFADD] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[BFADD] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenBloomFilterDSNode *tmp = nullptr;
@@ -134,13 +135,13 @@ namespace soupen_server
         tmp->val->add(params[1], param_lens[1]);
       } else {
         CREATE_BLOOM_FILTER_NODE(SoupenBloomFilter::DEFAULT_N, SoupenBloomFilter::DEFAULT_M);
-        if (SOUPEN_LIKELY(SOUPEN_SUCCESS == ret)) {
+        if (SOUPEN_SUCCED) {
           soupen_ds_node_insert(bfnode, bf, string);
           bf->add(params[1], param_lens[1]);
         }
       }
     }
-    if (SOUPEN_SUCCESS == ret) {
+    if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
       client->output_buffer_->append("-Operation failed");
@@ -153,7 +154,7 @@ namespace soupen_server
       int param_nums)
   {
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[BFCREATE] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[BFCREATE] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       int64_t n = SoupenCaster::char2int(params[1], params[1] + param_lens[1]);
@@ -178,7 +179,6 @@ namespace soupen_server
         }
       }
     }
-
     if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
@@ -192,7 +192,7 @@ namespace soupen_server
       int param_nums)
   {
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[BFDEL] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[BFDEL] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenBloomFilterDSNode *tmp = nullptr;
@@ -201,7 +201,6 @@ namespace soupen_server
         soupen_ds_node_del(tmp);
       }
     }
-
     if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
@@ -216,7 +215,7 @@ namespace soupen_server
   {
     int ret = SOUPEN_SUCCESS;
     bool is_found = false;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[BFCONTAINS] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[BFCONTAINS] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenBloomFilterDSNode *tmp = nullptr;
@@ -225,7 +224,6 @@ namespace soupen_server
         is_found  = tmp->val->contains(params[1], param_lens[1]);
       }
     }
-
     if (SOUPEN_FAILED) {
       client->output_buffer_->append("-Operation failed");
     } else if(is_found) {
@@ -243,7 +241,7 @@ namespace soupen_server
   {
     //tset db soupen 1
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[TSET] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[TSET] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenTrieDSNode *tmp = nullptr;
@@ -259,7 +257,6 @@ namespace soupen_server
         }
       }
     }
-
     if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
@@ -275,7 +272,7 @@ namespace soupen_server
     //tcontains db soupen
     int ret = SOUPEN_SUCCESS;
     bool is_found = false;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[TCONTAINS] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[TCONTAINS] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       SoupenTrieDSNode *tmp = nullptr;
@@ -284,7 +281,6 @@ namespace soupen_server
         is_found  = tmp->val->contains(params[1], params[1] + param_lens[1]);
       }
     }
-
     if (SOUPEN_FAILED) {
       client->output_buffer_->append("+OK\r\n");
     } else if(is_found) {
@@ -301,7 +297,7 @@ namespace soupen_server
   {
     //tdel db
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[TDEL] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[TDEL] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     }  else {
       SoupenTrieDSNode *tmp = nullptr;
@@ -310,7 +306,6 @@ namespace soupen_server
         soupen_ds_node_del(tmp);
       }
     }
-
     if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
@@ -326,13 +321,12 @@ namespace soupen_server
   {
     //change db
     int ret = SOUPEN_SUCCESS;
-    if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[SELECT] != param_nums)) {
+    if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[SELECT] != param_nums)) {
       ret = SOUPEN_ERROR_INVALID_ARGUMENT;
     } else {
       int db_id = static_cast<int>(SoupenCaster::char2int(params[0], params[0] + param_lens[0]));
       ret = SoupenServerInfoManager::set_current_db_id(db_id);
     }
-
     if (SOUPEN_SUCCED) {
       client->output_buffer_->append("+OK\r\n");
     } else {
@@ -347,7 +341,7 @@ namespace soupen_server
    {
      //change db
      int ret = SOUPEN_SUCCESS;
-     if (SOUPEN_UNLIKELY(ORDER_PARAM_NUM[FLUSHDB] != param_nums)) {
+     if (SOUPEN_UNLIKELY(CMD_PARAM_NUM[FLUSHDB] != param_nums)) {
        ret = SOUPEN_ERROR_INVALID_ARGUMENT;
      } else {
        int db_id = static_cast<int>(SoupenCaster::char2int(params[0], params[0] + param_lens[0]));
@@ -359,7 +353,6 @@ namespace soupen_server
          //flush db_id
        }
      }
-
      if (SOUPEN_SUCCED) {
        client->output_buffer_->append("+OK\r\n");
      } else {
@@ -368,42 +361,42 @@ namespace soupen_server
      return ret;
    }
   ////////////////////////////////////////////////////////////////////////
-  int set_order_routine()
+  int set_cmd_routine()
   {
     int ret = SOUPEN_SUCCESS;
     for (int i = 0; SOUPEN_SUCCESS == ret && i < MAX_TYPE ; ++i) {
-      SoupenOrderTrieNode *tn = (SoupenOrderTrieNode*)soupen_malloc(sizeof(SoupenOrderTrieNode));
+      SoupenCmdTrieNode *tn = (SoupenCmdTrieNode*)soupen_malloc(sizeof(SoupenCmdTrieNode));
       if (SOUPEN_UNLIKELY(nullptr == tn)) {
         ret = SOUPEN_ERROR_NO_MEMORY;
       } else if (SOUPEN_UNLIKELY(SOUPEN_SUCCESS != (ret = tn->init(false)))) {
         soupen_reclaim(tn);
       } else {
-        tn->order_type = static_cast<SoupenOrderType>(i);
-        tn->routine_func = order_funcs[i];
-        ret = yt.add(ORDER_NAME[i], tn);
+        tn->cmd_type = static_cast<SoupenCmdType>(i);
+        tn->routine_func = cmd_funcs[i];
+        ret = yt.add(CMD_NAME[i], tn);
       }
     }
     return ret;
   }
-  int init_order_funcs()
+  int init_cmd_funcs()
   {
-    order_funcs[BFADD] = bfadd;
-    order_funcs[SET] = bfadd;
-    order_funcs[BFCONTAINS] = bfcontains;
-    order_funcs[BFCREATE] = bfcreate;
-    order_funcs[BFDEL] = bfdel;
-    order_funcs[TSET] = tset;
-    order_funcs[TCONTAINS] = tcontains;
-    order_funcs[TDEL] = tdel;
-    order_funcs[SELECT] = select;
-    order_funcs[FLUSHDB] = flushdb;
+    cmd_funcs[BFADD] = bfadd;
+    cmd_funcs[SET] = bfadd;
+    cmd_funcs[BFCONTAINS] = bfcontains;
+    cmd_funcs[BFCREATE] = bfcreate;
+    cmd_funcs[BFDEL] = bfdel;
+    cmd_funcs[TSET] = tset;
+    cmd_funcs[TCONTAINS] = tcontains;
+    cmd_funcs[TDEL] = tdel;
+    cmd_funcs[SELECT] = select;
+    cmd_funcs[FLUSHDB] = flushdb;
     return SOUPEN_SUCCESS;
   }
-  SoupenOrderRoutine get_order_routine(char *order_name_start, char *order_name_end)
+  SoupenCmdRoutine get_cmd_routine(char *cmd_name_start, char *cmd_name_end)
   {
-    SoupenOrderRoutine ret = nullptr;
-    SoupenOrderTrieNode *ot = nullptr;
-    bool b = yt.contains(order_name_start, order_name_end, ot);
+    SoupenCmdRoutine ret = nullptr;
+    SoupenCmdTrieNode *ot = nullptr;
+    bool b = yt.contains(cmd_name_start, cmd_name_end, ot);
     if (b && nullptr != ot) {
       ret = ot->routine_func;
     }

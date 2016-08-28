@@ -11,7 +11,7 @@
 #include "../base/soupen_common.h"
 #include "../server/soupen_epoll.h"
 #include "../server/soupen_info_manager.h"
-#include "../server/soupen_order.h"
+#include "../server/soupen_cmd.h"
 using namespace soupen_client;
 using namespace soupen_datastructures;
 namespace soupen_server
@@ -98,7 +98,7 @@ namespace soupen_server
   {
     int ret = SOUPEN_SUCCESS;
     struct epoll_event event;
-    event.events = EPOLLIN;
+    event.events = EPOLLIN | EPOLLOUT | EPOLLET;
     event.data.fd = fd;
     if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &event) == -1) {
       Soupen_LOG("epoll_ctl failed", P(errno));
@@ -131,14 +131,14 @@ namespace soupen_server
         client->input_buffer_->append(tmp, bytes_read);
       }
       if (bytes_read == 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (errno == EAGAIN) {
           close_client(epfd, fd);
         } else {
           ret = SOUPEN_ERROR_UNEXPECTED;
           Soupen_LOG("unexpected error. read failed", P(bytes_read), P(fd), P(errno));
         }
       } else if (bytes_read == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (errno == EAGAIN) {
           if (SOUPEN_FAIL(parse_cmd(client->input_buffer_->get_ptr(), client))) {
             Soupen_LOG("parse cmd failed", P(ret), P(fd), P(errno));
           } else if (SOUPEN_FAIL(write_client(epfd, fd))) {
@@ -198,7 +198,6 @@ namespace soupen_server
   {
     int ret = SOUPEN_SUCCESS;
     int epfd = -1;
-    char response[12 * 1024];
     struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = sock_;
@@ -211,8 +210,6 @@ namespace soupen_server
     } else {
       struct epoll_event events[EPOLL_MAXEVENTS];
       memset(events, 0, sizeof(events));
-      char buffer[BUFF_SIZE];
-      int recv_size;
       while (1) {
         int res = epoll_wait(epfd, events, EPOLL_MAXEVENTS, EPOLL_TIMEOUT);
         if (res < 0) {

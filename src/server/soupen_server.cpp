@@ -1,15 +1,15 @@
-#include "../server/soupen_order.h"
+#include "../server/soupen_cmd.h"
 #include "../server/soupen_epoll.h"
 using namespace soupen_server;
 
 int main(int argc, char *argv[]) {
 
   SoupenEpoll epoll;
-  int ret = init_order_funcs();
+  int ret = init_cmd_funcs();
   if (SOUPEN_FAILED) {
     exit(1);
   }
-  ret = set_order_routine();
+  ret = set_cmd_routine();
   if (SOUPEN_FAILED) {
     exit(1);
   }

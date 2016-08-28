@@ -1,5 +1,5 @@
-#ifndef SOUPEN_ORDER_H_
-#define SOUPEN_ORDER_H_
+#ifndef SOUPEN_CMD_H_
+#define SOUPEN_CMD_H_
 #include "../server/soupen_db.h"
 #include "../client/soupen_client.h"
 #define LEFT_SPILT '\r'
@@ -22,7 +22,7 @@ namespace soupen_server
     MAX_DS_TYPE = 8
   };
 
-  enum SoupenOrderType
+  enum SoupenCmdType
   {
     HGET = 0,//hash map get
     HSET = 1,//hash map set
@@ -42,18 +42,18 @@ namespace soupen_server
     MAX_TYPE = 15
   };
 
-  typedef int (*SoupenOrderRoutine)(SoupenClient *client,
+  typedef int (*SoupenCmdRoutine)(SoupenClient *client,
       char **params,
       int *param_lens,
       int param_nums);
 
-  struct SoupenOrderTrieNode
+  struct SoupenCmdTrieNode
   {
     int init(bool is_case_sensitive)
     {
       int ret = SOUPEN_SUCCESS;
       int64_t size = 10 + 26 + 1;
-      next_ = (SoupenOrderTrieNode **)soupen_malloc(sizeof(SoupenOrderTrieNode*) * size);
+      next_ = (SoupenCmdTrieNode **)soupen_malloc(sizeof(SoupenCmdTrieNode*) * size);
       if (SOUPEN_UNLIKELY(nullptr == next_)) {
         ret = SOUPEN_ERROR_NO_MEMORY;
       } else {
@@ -62,20 +62,20 @@ namespace soupen_server
         }
         flag_ = false;
         routine_func = nullptr;
-        order_type = MAX_TYPE;
+        cmd_type = MAX_TYPE;
       }
       return ret;
     }
-    SoupenOrderRoutine routine_func;
-    SoupenOrderType order_type;
+    SoupenCmdRoutine routine_func;
+    SoupenCmdType cmd_type;
     bool flag_;
-    SoupenOrderTrieNode **next_;
+    SoupenCmdTrieNode **next_;
   };
 
-  int set_order_routine();
-  int init_order_funcs();
+  int set_cmd_routine();
+  int init_cmd_funcs();
   int parse_cmd(char *text, SoupenClient *client);
-  SoupenOrderRoutine get_order_routine(char *order_name_start, char *order_name_end);
+  SoupenCmdRoutine get_cmd_routine(char *cmd_name_start, char *cmd_name_end);
 
 
 
@@ -247,4 +247,4 @@ namespace soupen_server
 
 }
 
-#endif /* SOUPEN_ORDER_H_ */
+#endif /* SOUPEN_CMD_H_ */

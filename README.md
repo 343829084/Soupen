@@ -2,13 +2,13 @@
 
 Soupen is a high performance memory nosql database.
 
-It is designed to replace redis.
+It is an alternative to redis.
 
 ## How to build
 
 cd Soupen
 
-g++ -O2 src/lib/soupen_math.cpp src/client/soupen_client.cpp src/server/soupen_info_manager.cpp src/server/soupen_db.cpp src/ds/soupen_string.cpp src/ds/soupen_treap.cpp src/ds/soupen_bloom_filter.cpp src/server/soupen_order.cpp src/server/soupen_epoll.cpp src/server/soupen_server.cpp -o soupen_server
+g++ -O2 src/lib/soupen_math.cpp src/client/soupen_client.cpp src/server/soupen_info_manager.cpp src/server/soupen_db.cpp src/ds/soupen_string.cpp src/ds/soupen_treap.cpp src/ds/soupen_bloom_filter.cpp src/server/soupen_cmd.cpp src/server/soupen_epoll.cpp src/server/soupen_server.cpp -o soupen_server
 
 
 ./soupen_server
